@@ -23,11 +23,11 @@
 | `OPT`  | `VAL` | `Result`         | `NAME`  | `FULL OPC`    | `OP1` | `OP2` | `DEST` |
 |--------|-------|------------------|---------|---------------|-------|-------|--------|
 | `ALU`  | `000` | `OP1 & OP2`      | `AND`   | `XXX00000`    | Yes   | Yes   | Yes    |
-| `ALU`  | `001` | `OP1 \| OP2`     | `OR`    | `XXX00001`    | Yes   | Yes   | Yes    |
+| `ALU`  | `001` | `OP1 ROR OP2`    | `ROR`   | `XXX00100`    | Yes   | Yes   | Yes    |
 | `ALU`  | `010` | `OP1 + OP2`      | `ADD`   | `XXX00010`    | Yes   | Yes   | Yes    |
 | `ALU`  | `011` | `OP1 ^ OP2`      | `XOR`   | `XXX00011`    | Yes   | Yes   | Yes    |
-| `ALU`  | `100` | `~(OP1 & OP2)`   | `NAND`  | `XXX00100`    | Yes   | Yes   | Yes    |
-| `ALU`  | `101` | `~(OP1 \| OP2)`  | `NOR`   | `XXX00101`    | Yes   | Yes   | Yes    |
+| `ALU`  | `100` | `OP1 \| OP2`     | `OR`    | `XXX00001`    | Yes   | Yes   | Yes    |
+| `ALU`  | `101` | `OP1 ROL OP2`    | `ROL`   | `XXX00101`    | Yes   | Yes   | Yes    |
 | `ALU`  | `110` | `OP1 - OP2`      | `SUB`   | `XXX00110`    | Yes   | Yes   | Yes    |
 | `ALU`  | `111` | `!OP1`           | `NOT`   | `XXX00111` (ignores OP2) | Yes   | No    | Yes    |
 | `COND` | `000` | Always           | `JMP`   | `XXX01000` (unconditional jump) | Yes   | No    | No    |
@@ -77,7 +77,7 @@ Calling `WRT` in ASCII format with an immediate value of `0x00` will clear the t
 
 ## Design rationale/notes
 - The ISA is designed to be simple and easy to understand, with a small set of instructions that can be used to perform a wide range of operations.
-- The first bit in the subtype of `ALU` operations is used to indicate an logically inverted operation. e.g. `NAND` is the logical negation of `AND`, and `NOR` is the logical negation of `OR`. This makes it easier to implement logical operations in hardware. Exception: `NOT` and `XOR` are paired as outliers. `ADD` and `SUB` are also paired, as they are informal logical inverses of each other, but are not logically negated.
+- The first bit in the subtype of `ALU` operations is used to indicate a related operation. For example, `ROR` and `ROL` are bitwise rotations, and are paired for symmetry, as is `ADD` and `SUB` Exception: `NOT` and `XOR` are paired as outliers.
 - The `COND` operations are designed to be used for control flow, allowing the program to branch based on the values of the operands. The first bit in the subtype is used to negate the condition, so `JNE` is the negation of `JEQ`, and `JGE` is the negation of `JLT`. This allows for an easier implementation of control flow in hardware, as the negation can be done with a single bit flip.
 - The `IO` operations are designed to be used for input/output and miscellaneous operations. The `MOV` and `SWAP` instructions are used to move data between registers, and the `PUSH` and `POP` instructions are used to manipulate the stack. The `WRT` instruction is used to write data to the terminal, and the `CALL` instruction is used to call subroutines. The `JRE` instruction is used to jump to a relative address, which is useful for implementing loops and other control flow structures. The `HCF` instruction is used to halt the program, which can be useful for debugging or when the program has finished executing.
 
@@ -141,7 +141,7 @@ This is intentionally designed to be flexible, but it is powerful and should be 
 `ADD r0, r1, r2`  
 This instruction adds the values in `r0` and `r1`, and stores the result in `r2`.  
 Binary: `00000010 00000000 00000001 00000010`  
-ADD is an ALU operation (`00` type + `000` subtype) so the opcode is `00000010`, and the operands are `r0`, `r1`, and `r2`, which are `00000000`, `00000001`, and `00000010` respectively.  
+ADD is an ALU operation (`00` type + `010` subtype) so the opcode is `00000010`, and the operands are `r0`, `r1`, and `r2`, which are `00000000`, `00000001`, and `00000010` respectively.  
 
 `AND r0, 0b01010101, r1`  
 This instruction performs a bitwise AND operation between the value in `r0` and the immediate value `0b01010101`, and stores the result in `r1`.  
