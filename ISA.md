@@ -1,4 +1,5 @@
-# ISA Documentation
+# Micro-8 ISA documentation
+
 
 **4 bytes per instruction:**  
 `OPCODE OPERAND1 OPERAND2 DEST`
@@ -96,7 +97,7 @@ All jump instructions will write `DEST` to the program counter (`r7`), which is 
 - `r0-r3` registers are general purpose, and can be the source or destination of any operation, for any purpose.  
 - `r4` is the [RAM](#memory) address register, and is used to point to the current RAM address, along with:  
 - `r5` is the [RAM](#memory) data register, which is used to read/write data from/to RAM.
-- `r6` is reserved for future use, and should not be used in programs. Reads from `r6` will return `0x00`, and writes to `r6` will be ignored. This is undefined behavior, and should not be relied upon.
+- `r6` is reserved for future implementation of status registers, and should not be used in programs. Reads from `r6` will return `0x00`, and writes to `r6` will be ignored. This is undefined behavior, and should not be relied upon.
 - `r7` is the program counter, which points to the next instruction to execute, and is used for `CALL` and `RET` operations.
 
 The canonical register names are `r0`, `r1`, `r2`, `r3`, `r4`, `r5`, and `r7`.
