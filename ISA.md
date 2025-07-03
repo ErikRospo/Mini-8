@@ -49,15 +49,18 @@ Opcode is a 1 byte value, with the following structure:
 
 `MOV` and `SWAP` are used to move data between registers, with `MOV` copying the value from `OP1` to `DEST`, and `SWAP` exchanging the values of `OP1` and `DEST`. `MOV` can also be used to load immediate values into registers. `SWAP` is a symmetric operation, meaning that calling `SWAP r0, r1` is equivalent to calling `SWAP r1, r0`, and will exchange the values of `r0` and `r1`. 
 
-`DEST` is always a register, and is the destination of the operation. 
+`DEST` is always a register, and is the destination of the operation.  
 \*: All comparisons are unsigned
 
-Jumps are to absolute locations.
+`COND` jumps are to absolute locations, with the exception of `JRE`, which jumps to a relative location based on the value in `r0`.  
+
 Unless stated otherwise, all immediates are unsigned 8-bit integers, and all registers are 8-bit unsigned integers.
-The only exception is the `JRE` instruction, which interprets the value in `r0` as a signed 8-bit integer, and jumps to the address `PC + r0`, where `PC` is the current value of the program counter (`r7`).
+The only exception is the `JRE` instruction, which interprets the value in `r0` as a signed 8-bit integer, and jumps to the address `PC + r0`, where `PC` is the current value of the program counter (`r7`).  
+
 Two's complement is used for signed integers, so `0x80` is `-128`, and `0x7F` is `127`. To convert an u8 to an i8, the `SUB` instruction can be used with `0x80` as the second operand, e.g. `SUB r0, 0x80, r1` will convert the value in `r0` to a signed integer in `r1`.
 
-In operations where `DEST` is not used, the value in `DEST` should be 0 by specification, and is ignored by the operation.  
+In operations where `DEST` is not used, the value in `DEST` should be 0 by specification, and is ignored by the operation.   
+
 The same applies to `OP2` in `NOT`, `NOP`, `PUSH`, `POP`, `CALL`, `MOV`, `JRE`, and `HCF` instructions, which are ignored and should be set to 0 by specification.
 The only times `OP1` is ignored are in the `NOP` and `HCF` instructions, which are no-ops and halt the program, respectively. `OP1` should be set to 0 by specification in these cases.
 
@@ -113,37 +116,46 @@ That is, the PC value indexes *instructions*, *NOT* bytes.
 ## Immediates
 
 Immediates are 8-bit unsigned integers. Any instruction that has an immediate value will act exactly as if the immediate value was loaded into a register, and then used as an operand.
-For example, the instruction `ADD r0, 0x01, r1` will add the value `0x01` to the value in `r0`, and store the result in `r1`
-This is equivalent to the instruction  `ADD r0, r4, r1`, where `r4` is set to `0x01` before the instruction is executed.
-Immediates can only be used as the first or second operand of an instruction, and cannot be used as the destination of an instruction.
+For example, the instruction `ADD r0, 0x01, r1` will add the value `0x01` to the value in `r0`, and store the result in `r1`  
+
+This is equivalent to the instruction  `ADD r0, r4, r1`, where `r4` is set to `0x01` before the instruction is executed.  
+
+Immediates can only be used as the first or second operand of an instruction, and cannot be used as the destination of an instruction.  
+
 If the operation does not use the second, the immediate bit is ignored, and should be set to `0`. The same applies to the first operand, which is ignored if the operation does not use it.
 
 
 
 ## Suggested Assembler Macros
 
-The following macros are suggested to make programming in this ISA easier:
+The following macros are suggested to make programming in this architecture easier:
 ```assembly
 define ZERO(reg):
       MOV 0x00, reg
 end
+
 define INC(reg):
       ADD reg, 0x01, reg
 end
+
 define DEC(reg):
       SUB reg, 0x01, reg
 end
+
 define RET:
       POP r7
 end
+
 define LOAD(addr_reg, dest):
     MOV addr_reg, RAMVAL
     MOV RAMDATA, dest
 end
+
 define STORE(src, addr_reg):
     MOV addr_reg, RAMVAL
     MOV src, RAMDATA
 end
+
 define SAVE(val): 
    MOV RAMDATA, val
    ADD RAMADDR, 0x01, RAMADDR
@@ -160,9 +172,9 @@ The assembler SHOULD:
 ## Assembler Directives
 The assembler SHOULD support the following directives:
 1. `label label_name:`
-This directive defines a label that can be used to jump to a specific location in the code.
+This directive defines a label that can be used to jump to a specific location in the code.  
 This allows for easier code organization and readability, as well as the ability to jump to specific locations in the code without having to calculate the address manually.
-Labels can be used in jump instructions, such as `JMP label_name`, `JNE label_name`, `JGE label_name`, etc.
+Labels can be used in jump instructions, such as `JMP label_name`, `JNE label_name`, `JGE label_name`, etc.  
 The assembler SHOULD automatically calculate the address of the label, and replace the label with the address in the generated machine code.
 
 2. `define constant_name value`
@@ -175,7 +187,7 @@ Macros can take arguments, and the assembler SHOULD replace the arguments with t
 
 
 ## Memory
-The ISA has 256 bytes of RAM, which can be accessed using the `r4` and `r5` registers.
+The ISA has 256 bytes of RAM, which can be indirectly accessed using the `r4` and `r5` registers.
 The memory is byte-addressable. `r5` is used to read/write data from/to RAM. `r4` is used to point to the current RAM address.
 - Writing to memory can be done by *ANY* instruction that has `r5` as the destination, and reading from memory can be done by *ANY* instruction that has `r5` as the source. 
 This is intentionally designed to be flexible, but it is powerful and should be used with care.
