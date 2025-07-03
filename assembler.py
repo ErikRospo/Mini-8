@@ -124,8 +124,19 @@ def assemble(lines):
                     constants[name] = parse_value(rest, constants)
                     i += 1
                     continue
-        if line.endswith(':'):
-            labels[line[:-1]] = pc
+        # Handle multiple labels on the same line, e.g. "foo: bar: instr"
+        while True:
+            m = re.match(r'^(\w+):\s*(.*)', line)
+            if m:
+                label = m.group(1)
+                rest = m.group(2)
+                labels[label] = pc
+                line = rest
+                if not line:
+                    break
+            else:
+                break
+        if not line:
             i += 1
             continue
         expanded.append(line)
@@ -174,13 +185,33 @@ def assemble(lines):
     pc = 0
     output = []
     for line in expanded:
+        # Remove inline labels (should not be present after first pass, but just in case)
+        while True:
+            m = re.match(r'^(\w+):\s*(.*)', line)
+            if m:
+                line = m.group(2)
+            else:
+                break
+        if not line.strip():
+            continue
         tokens = re.split(r'[,\s]+', line.strip())
         if not tokens or not tokens[0]:
             continue
         mnemonic = tokens[0].upper()
+        if mnemonic == 'LABEL':
+            # Handle label definition, e.g. "LABEL foo"
+            if len(tokens) != 2:
+                raise ValueError(f"Invalid LABEL definition: {line}")
+            label_name = tokens[1].strip().strip(":")
+            if label_name in labels:
+                raise ValueError(f"Label '{label_name}' already defined")
+            labels[label_name] = pc
+            constants[label_name] = pc  # Also treat label as constant
+            # pc += 1  # Increment PC for label definition
+            continue
         args = tokens[1:]
         # Macro expansion handled above
-        # Label resolution in args
+        # Label resolution in args (support labels as operands)
         for i, arg in enumerate(args):
             if arg in labels:
                 args[i] = str(labels[arg])
