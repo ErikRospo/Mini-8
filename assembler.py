@@ -85,26 +85,58 @@ def assemble(lines):
     code = []
     pc = 0
     expanded = []
-    for line in lines:
-        line = line.split(';')[0].strip()
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i].split(';')[0].strip()
         if not line:
+            i += 1
             continue
         if line.startswith('define '):
-            # Constant or macro
-            m = re.match(r'define\s+(\w+)\s+(.+)', line)
+            m = re.match(r'define\s+(\w+)(:)?\s*(.*)', line)
             if m:
-                name, val = m.group(1), m.group(2)
-                if ':' in val:
-                    # Macro, skip for now
-                    macros[name] = val
+                name, colon, rest = m.group(1), m.group(2), m.group(3)
+                if colon:
+                    # Macro: collect lines until next define or EOF
+                    macro_lines = []
+                    i += 1
+                    while i < n:
+                        next_line = lines[i].split(';')[0].strip()
+                        if next_line.startswith('define '):
+                            break
+                        if next_line:
+                            macro_lines.append(next_line)
+                        i += 1
+                    macros[name.upper()] = macro_lines
+                    continue
                 else:
-                    constants[name] = parse_value(val, constants)
-            continue
+                    constants[name] = parse_value(rest, constants)
+                    i += 1
+                    continue
         if line.endswith(':'):
             labels[line[:-1]] = pc
+            i += 1
             continue
         expanded.append(line)
         pc += 1
+        i += 1
+
+    # Macro expansion (recursive, no args)
+    def expand_macros(lines):
+        result = []
+        for line in lines:
+            tokens = re.split(r'[,\s]+', line.strip())
+            if not tokens or not tokens[0]:
+                continue
+            mnemonic = tokens[0].upper()
+            if mnemonic in macros:
+                # Expand macro recursively
+                result.extend(expand_macros(macros[mnemonic]))
+            else:
+                result.append(line)
+        return result
+
+    expanded = expand_macros(expanded)
 
     # Second pass: assemble instructions
     pc = 0
@@ -115,9 +147,7 @@ def assemble(lines):
             continue
         mnemonic = tokens[0].upper()
         args = tokens[1:]
-        # Macro expansion (minimal, no args)
-        if mnemonic in macros:
-            continue  # Not implemented: macro expansion
+        # Macro expansion handled above
         # Label resolution in args
         for i, arg in enumerate(args):
             if arg in labels:
