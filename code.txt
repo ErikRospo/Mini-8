@@ -1,0 +1,7 @@
+define INC reg:
+    ADD reg, 0x01, reg
+
+    MOV 0x05, r0
+    INC r0
+    WRT r0, 0x01
+    HCF
