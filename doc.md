@@ -124,26 +124,26 @@ If the operation does not use the second, the immediate bit is ignored, and shou
 
 The following macros are suggested to make programming in this ISA easier:
 ```assembly
-ZERO reg:
+define ZERO reg:
       MOV 0x00, reg
-INC reg:
+define INC reg:
       ADD reg, 0x01, reg
-DEC reg:
+define DEC reg:
       SUB reg, 0x01, reg
-RET:
+define RET:
       POP r7
 
-LOAD addr_reg, dest:
+define LOAD addr_reg, dest:
     MOV addr_reg, RAMVAL
     MOV RAMDATA, dest
 
-STORE src, addr_reg:
+define STORE src, addr_reg:
     MOV addr_reg, RAMVAL
     MOV src, RAMDATA
 
-SAVE val: 
+define SAVE val: 
    MOV RAMDATA, val
-   ADD RAMVAL, 0x01, RAMVAL
+   ADD RAMADDR, 0x01, RAMADDR
 ```
 
 ## Recommended Assembler Behavior
@@ -152,6 +152,21 @@ The assembler SHOULD:
 - Automatically fill in the immediate bits with `0` for instructions that do not use them, such as `NOP`, `HCF`, etc.
 - If arguments are not provided and the instruction does not require them, the assembler SHOULD fill the arguments with `0` by default. For example, `MOV r0, r1` should be equivalent to `MOV r0, 0x00, r1`. In cases where this is ambiguous or impossible, the assembler SHOULD error out and warn the user.
 - If DEST is not provided, the assembler SHOULD fill it with `r0` by default, and MUST warn the user during assembly. 
+
+## Assembler Directives
+The assembler SHOULD support the following directives:
+1. `label label_name:`
+This directive defines a label that can be used to jump to a specific location in the code.
+This allows for easier code organization and readability, as well as the ability to jump to specific locations in the code without having to calculate the address manually.
+Labels can be used in jump instructions, such as `JMP label_name`, `JNE label_name`, `JGE label_name`, etc.
+The assembler SHOULD automatically calculate the address of the label, and replace the label with the address in the generated machine code.
+
+2. `define constant_name value`
+This directive defines a constant that can be used in the code. The assembler SHOULD replace all occurrences of the constant with the value in the generated machine code.
+
+3. `define macro_name args:`
+This directive defines a macro that can be used in the code. The assembler SHOULD replace all occurrences of the macro with the expanded code in the generated machine code.
+Macros can take arguments, and the assembler SHOULD replace the arguments with the values provided in the macro call.
 
 
 
