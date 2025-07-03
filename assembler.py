@@ -93,8 +93,9 @@ def assemble(lines):
             i += 1
             continue
         if line.startswith('define '):
-            # Support macro arguments: define MACRO(arg1,arg2):
+            # Support macro arguments: define MACRO(arg1,arg2): ... end
             m = re.match(r'define\s+(\w+)(\((.*?)\))?(\:)?\s*(.*)', line)
+            print(f"Processing line {i}: {line}")
             if m:
                 name = m.group(1)
                 arglist = m.group(3)
@@ -104,11 +105,14 @@ def assemble(lines):
                 if arglist:
                     macro_args = [a.strip() for a in arglist.split(',') if a.strip()]
                 if colon:
-                    # Macro: collect lines until next define or EOF
+                    # Macro: collect lines until 'end' or next define or EOF
                     macro_lines = []
                     i += 1
                     while i < n:
                         next_line = lines[i].split(';')[0].strip()
+                        if next_line == 'end':
+                            i += 1
+                            break
                         if next_line.startswith('define '):
                             break
                         if next_line:

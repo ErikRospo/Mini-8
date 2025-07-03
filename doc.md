@@ -126,24 +126,28 @@ The following macros are suggested to make programming in this ISA easier:
 ```assembly
 define ZERO(reg):
       MOV 0x00, reg
+end
 define INC(reg):
       ADD reg, 0x01, reg
+end
 define DEC(reg):
       SUB reg, 0x01, reg
+end
 define RET:
       POP r7
-
+end
 define LOAD(addr_reg, dest):
     MOV addr_reg, RAMVAL
     MOV RAMDATA, dest
-
+end
 define STORE(src, addr_reg):
     MOV addr_reg, RAMVAL
     MOV src, RAMDATA
-
+end
 define SAVE(val): 
    MOV RAMDATA, val
    ADD RAMADDR, 0x01, RAMADDR
+end
 ```
 
 ## Recommended Assembler Behavior
@@ -164,7 +168,7 @@ The assembler SHOULD automatically calculate the address of the label, and repla
 2. `define constant_name value`
 This directive defines a constant that can be used in the code. The assembler SHOULD replace all occurrences of the constant with the value in the generated machine code.
 
-3. `define macro_name(arg0, arg1):`
+3. `define macro_name(arg0, arg1): ... end`
 This directive defines a macro that can be used in the code. The assembler SHOULD replace all occurrences of the macro with the expanded code in the generated machine code.
 Macros can take arguments, and the assembler SHOULD replace the arguments with the values provided in the macro call.
 
