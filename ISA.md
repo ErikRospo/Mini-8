@@ -21,30 +21,30 @@ Opcode is a 1 byte value, with the following structure:
 
 | `OPT`  | `VAL` | `Result`         | `NAME`  | `FULL OPC`    | `OP1` | `OP2` | `DEST` |
 |--------|-------|------------------|---------|---------------|-------|-------|--------|
-| `ALU`  | `000` | `OP1 & OP2`      | `AND`   | `XXX00000`    | Yes   | Yes   | Yes    |
-| `ALU`  | `001` | `OP1 ROR OP2`    | `ROR`   | `XXX00100`    | Yes   | Yes   | Yes    |
-| `ALU`  | `010` | `OP1 + OP2`      | `ADD`   | `XXX00010`    | Yes   | Yes   | Yes    |
-| `ALU`  | `011` | `OP1 ^ OP2`      | `XOR`   | `XXX00011`    | Yes   | Yes   | Yes    |
-| `ALU`  | `100` | `OP1 \| OP2`     | `OR`    | `XXX00001`    | Yes   | Yes   | Yes    |
-| `ALU`  | `101` | `OP1 ROL OP2`    | `ROL`   | `XXX00101`    | Yes   | Yes   | Yes    |
-| `ALU`  | `110` | `OP1 - OP2`      | `SUB`   | `XXX00110`    | Yes   | Yes   | Yes    |
-| `ALU`  | `111` | `!OP1`           | `NOT`   | `XXX00111` (ignores OP2) | Yes   | No    | Yes    |
-| `COND` | `000` | Always           | `JMP`   | `XXX01000` (unconditional jump) | No    | No    | Yes    |
-| `COND` | `001` | `OP1 != OP2`     | `JNE`   | `XXX01001`    | Yes   | Yes   | Yes    |
-| `COND` | `010` | `OP1 >= OP2`     | `JGE`   | `XXX01010` *  | Yes   | Yes   | Yes    |
-| `COND` | `011` | `OP1 > OP2`      | `JGT`   | `XXX01011` *  | Yes   | Yes   | Yes    |
-| `COND` | `100` | Never            | `NOP`   | `XXX01100` (never jumping is a no-op) | No    | No    | No     |
-| `COND` | `101` | `OP1 == OP2`     | `JEQ`   | `XXX01101`    | Yes   | Yes   | Yes    |
-| `COND` | `110` | `OP1 < OP2`      | `JLT`   | `XXX01110` *  | Yes   | Yes   | Yes    |
-| `COND` | `111` | `OP1 <= OP2`     | `JLE`   | `XXX01111` *  | Yes   | Yes   | Yes    |
-| `IO`   | `000` | `DEST=OP1`        | `MOV`   | `XX010000`    | Yes   | No    | Yes    |
-| `IO`   | `001` | Swap OP1<->DEST   | `SWAP`  | `X0X10001`    | Yes   | No    | Yes    |
-| `IO`   | `010` | Push OP1 onto stack | `PUSH` | `XXX10010`    | Yes   | No    | No     |
-| `IO`   | `011` | Pop stack into out | `POP`  | `XXX10011`    | No    | No    | Yes    |
-| `IO`   | `100` | Write OP1 to TERM | `WRT`  | `XXX10100` (See [WRT](#WRT)) | Yes   | Yes   | No     |
-| `IO`   | `101` | Call              | `CALL` | `XXX10101`    | Yes   | No    | No     |
-| `IO`   | `110` | Jump Relative     | `JRE`  | `XXX10110`    | No    | No    | No     |
-| `IO`   | `111` | Halt              | `HCF`  | `XXX10111`    | No    | No    | No     |
+| `ALU`  | `000` | `OP1 & OP2`      | `AND`   | 0XX00000`    | Yes   | Yes   | Yes    |
+| `ALU`  | `001` | `OP1 ROR OP2`    | `ROR`   | 0XX00100`    | Yes   | Yes   | Yes    |
+| `ALU`  | `010` | `OP1 + OP2`      | `ADD`   | 0XX00010`    | Yes   | Yes   | Yes    |
+| `ALU`  | `011` | `OP1 ^ OP2`      | `XOR`   | 0XX00011`    | Yes   | Yes   | Yes    |
+| `ALU`  | `100` | `OP1 \| OP2`     | `OR`    | 0XX00001`    | Yes   | Yes   | Yes    |
+| `ALU`  | `101` | `OP1 ROL OP2`    | `ROL`   | 0XX00101`    | Yes   | Yes   | Yes    |
+| `ALU`  | `110` | `OP1 - OP2`      | `SUB`   | 0XX00110`    | Yes   | Yes   | Yes    |
+| `ALU`  | `111` | `!OP1`           | `NOT`   | 0XX00111` (ignores OP2) | Yes   | No    | Yes    |
+| `COND` | `000` | Always           | `JMP`   | 0XX01000` (unconditional jump) | No    | No    | Yes    |
+| `COND` | `001` | `OP1 != OP2`     | `JNE`   | 0XX01001`    | Yes   | Yes   | Yes    |
+| `COND` | `010` | `OP1 >= OP2`     | `JGE`   | 0XX01010` *  | Yes   | Yes   | Yes    |
+| `COND` | `011` | `OP1 > OP2`      | `JGT`   | 0XX01011` *  | Yes   | Yes   | Yes    |
+| `COND` | `100` | Never            | `NOP`   | 0XX01100` (never jumping is a no-op) | No    | No    | No     |
+| `COND` | `101` | `OP1 == OP2`     | `JEQ`   | 0XX01101`    | Yes   | Yes   | Yes    |
+| `COND` | `110` | `OP1 < OP2`      | `JLT`   | 0XX01110` *  | Yes   | Yes   | Yes    |
+| `COND` | `111` | `OP1 <= OP2`     | `JLE`   | 0XX01111` *  | Yes   | Yes   | Yes    |
+| `IO`   | `000` | `DEST=OP1`        | `MOV`   | 0X010000`    | Yes   | No    | Yes    |
+| `IO`   | `001` | Swap OP1<->DEST   | `SWAP`  | 00X10001`    | Yes   | No    | Yes    |
+| `IO`   | `010` | Push OP1 onto stack | `PUSH` | 0XX10010`    | Yes   | No    | No     |
+| `IO`   | `011` | Pop stack into out | `POP`  | 0XX10011`    | No    | No    | Yes    |
+| `IO`   | `100` | Write OP1 to TERM | `WRT`  | 0XX10100` (See [WRT](#WRT)) | Yes   | Yes   | No     |
+| `IO`   | `101` | Call              | `CALL` | 0XX10101`    | Yes   | No    | No     |
+| `IO`   | `110` | Jump Relative     | `JRE`  | 0XX10110`    | No    | No    | No     |
+| `IO`   | `111` | Halt              | `HCF`  | 0XX10111`    | No    | No    | No     |
 
 `RET` can be implemented by macros by `POP`ing the stack into the PC register, `r7`.
 
@@ -88,7 +88,7 @@ All jump instructions will write `DEST` to the program counter (`r7`), which is 
 
 ## Design rationale/notes
 - The ISA is designed to be simple and easy to understand, with a small set of instructions that can be used to perform a wide range of operations.
-- The first bit in the subtype of `ALU` operations is used to indicate a related operation. For example, `ROR` and `ROL` are bitwise rotations, and are paired for symmetry, as is `ADD` and `SUB` Exception: `NOT` and `XOR` are paired as outliers.
+- The first bit in the subtype of `ALU` operations is used to indicate a related operation. For example, `ROR` and `ROL` are bitwise rotations, and are paired for symmetry, as is `ADD` and `SUB` Exception: `NOT` and 0OR` are paired as outliers.
 - The `COND` operations are designed to be used for control flow, allowing the program to branch based on the values of the operands. The first bit in the subtype is used to negate the condition, so `JNE` is the negation of `JEQ`, and `JGE` is the negation of `JLT`. This allows for an easier implementation of control flow in hardware, as the negation can be done with a single bit flip.
 - The `IO` operations are designed to be used for input/output and miscellaneous operations. The `MOV` and `SWAP` instructions are used to move data between registers, and the `PUSH` and `POP` instructions are used to manipulate the stack. The `WRT` instruction is used to write data to the terminal, and the `CALL` instruction is used to call subroutines. The `JRE` instruction is used to jump to a relative address, which is useful for implementing loops and other control flow structures. The `HCF` instruction is used to halt the program, which can be useful for debugging or when the program has finished executing.
 
@@ -239,7 +239,7 @@ This instruction subtracts the immediate value `0x80` from the value in `r0`, an
 Binary: `00100110 00000000 10000000 00000001`  
 SUB is an ALU operation (`00` type + `110` subtype), so the opcode is `00100110`. The operands are `r0`, `0x80`, and `r1`, which are `00000000`, `10000000`, and `00000001` respectively. This will convert the value in `r0` to a signed integer in `r1`.
 
-`XOR r0, 0x55, r0`  
+0OR r0, 0x55, r0`  
 This instruction performs a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and stores the result back in `r0`. 
 Binary: `00100011 00000000 01010101 00000000`
 XOR is an ALU operation (`00` type + `011` subtype), so the opcode is `00100011`. The operands are `r0`, `0x55`, and `r0`, which are `00000000`, `01010101`, and `00000000` respectively. This will perform a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and store the result back in `r0`.
