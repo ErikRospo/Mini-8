@@ -4,6 +4,8 @@ JMP $main
 label $hexprint:
     PUSH r1
     PUSH r0
+    WRT "0", 0b0
+    WRT "x", 0b0
     MOV r0, r1 ; Keep a copy of the result in r1 for high nibble
     AND r1, 0xF0, r1 ; Get the high nibble of r1
     ; move it down to the low nibble for printing
@@ -33,9 +35,9 @@ label $loop: ; fibonacci numbers
 CALL $hexprint
 WRT 10, 0b00 ; Write newline to the terminal in ascii format
 
-ADD r0, 0x0B, r0 
+ADD r0, 0xc8, r0 
 CALL $hexprint
-WRT 32, 0b00 ; Write space to the terminal in ascii format
+WRT 10, 0b00 ; Write space to the terminal in ascii format
 
 
 
