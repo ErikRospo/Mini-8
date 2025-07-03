@@ -47,7 +47,7 @@ Opcode is a 1 byte value, with the following structure:
 
 `RET` can be implemented by macros by `POP`ing the stack into the PC register, `r7`.
 
-`DEST` is always a register, and is the destination of the operation. For `MOV` and `SWAP`, OP1 is the source, and OP2 is the destination.
+`DEST` is always a register, and is the destination of the operation. 
 \*: All comparisons are unsigned
 
 Jumps are to absolute locations.
