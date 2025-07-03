@@ -39,18 +39,11 @@ WRT 32, 0b00 ; Write space to the terminal in ascii format
 
 
 
-; Write out "Hello, world!\n". Use a loop for 'll' to show how such a control structure could be implemented.
 
 WRT 'H', 0b00
 WRT 'e', 0b00
-
-MOV 2, r0
-    
-label $lLoop:
-    SUB r0, 1, r0
-    WRT 'l', 0b00
-    JNE r0, 0, $lLoop
-
+WRT 'l', 0b00
+WRT 'l', 0b00
 WRT 'o', 0b00
 WRT 44, 0b00
 WRT 32, 0b00
