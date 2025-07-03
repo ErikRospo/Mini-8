@@ -47,6 +47,8 @@ Opcode is a 1 byte value, with the following structure:
 
 `RET` can be implemented by macros by `POP`ing the stack into the PC register, `r7`.
 
+`MOV` and `SWAP` are used to move data between registers, with `MOV` copying the value from `OP1` to `DEST`, and `SWAP` exchanging the values of `OP1` and `DEST`. `MOV` can also be used to load immediate values into registers. `SWAP` is a symmetric operation, meaning that calling `SWAP r0, r1` is equivalent to calling `SWAP r1, r0`, and will exchange the values of `r0` and `r1`. 
+
 `DEST` is always a register, and is the destination of the operation. 
 \*: All comparisons are unsigned
 
