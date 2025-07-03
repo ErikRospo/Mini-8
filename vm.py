@@ -19,7 +19,10 @@ class MiniMachineVM:
             return None
         instr = self.program[idx:idx+4]
         return instr
-
+    def immstr(self, imm1,imm2):
+        im1s="i" if imm1 else "r"
+        im2s="i" if imm2 else "r"
+        return f"_{im1s}{im2s}"
     def disassemble(self, instr):
         opcode, op1, op2, dest = instr
         imm1 = (opcode >> 6) & 1
@@ -31,16 +34,16 @@ class MiniMachineVM:
             return f"r{idx}"
 
         def op_val(val, imm):
-            return f"{val}" if imm else reg_name(val & 0x7)
-
+            return f"{val} ({hex(val)})" if imm else reg_name(val & 0x7)
+        imstr=self.immstr(imm1,imm2)
         if opclass == 0b00:
             # ALU
             alu_ops = ["AND", "ROR", "ADD", "XOR", "OR", "ROL", "SUB", "NOT"]
             op = alu_ops[subtype] if subtype < len(alu_ops) else "???"
             if op == "NOT":
-                return f"{op} {op_val(op1, imm1)}, {reg_name(dest & 0x7)}"
+                return f"{op}{imstr} {op_val(op1, imm1)}, {reg_name(dest & 0x7)}"
             else:
-                return f"{op} {op_val(op1, imm1)}, {op_val(op2, imm2)}, {reg_name(dest & 0x7)}"
+                return f"{op}{imstr} {op_val(op1, imm1)}, {op_val(op2, imm2)}, {reg_name(dest & 0x7)}"
         elif opclass == 0b01:
             # COND
             cond_ops = ["JMP", "JNE", "JGE", "JGT", "NOP", "JEQ", "JLT", "JLE"]
@@ -50,26 +53,26 @@ class MiniMachineVM:
             elif op == "NOP":
                 return f"{op}"
             else:
-                return f"{op} {op_val(op1, imm1)}, {op_val(op2, imm2)}, {dest}"
+                return f"{op}{imstr} {op_val(op1, imm1)}, {op_val(op2, imm2)}, {dest}"
         elif opclass == 0b10:
             # IO
             io_ops = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "JRE", "HCF"]
             op = io_ops[subtype] if subtype < len(io_ops) else "???"
             if op == "MOV":
-                return f"{op} {op_val(op1, imm1)}, {reg_name(dest & 0x7)}"
+                return f"{op}{imstr} {op_val(op1, imm1)}, {reg_name(dest & 0x7)}"
             elif op == "SWAP":
-                return f"{op} {reg_name(op1 & 0x7)}, {reg_name(dest & 0x7)}"
+                return f"{op}{imstr} {reg_name(op1 & 0x7)}, {reg_name(dest & 0x7)}"
             elif op == "PUSH":
-                return f"{op} {op_val(op1, imm1)}"
+                return f"{op}{imstr} {op_val(op1, imm1)}"
             elif op == "POP":
-                return f"{op} {reg_name(dest & 0x7)}"
+                return f"{op}{imstr} {reg_name(dest & 0x7)}"
             elif op == "WRT":
                 fmt_names = ["ASC", "DEC", "ALP", "HEX"]
                 fmt = op2 & 0x3
                 fmt_str = fmt_names[fmt] if fmt < len(fmt_names) else str(fmt)
-                return f"{op} {op_val(op1, imm1)}, {fmt_str}"
+                return f"{op}{imstr} {op_val(op1, imm1)}, {fmt_str}"
             elif op == "CALL":
-                return f"{op} {op_val(op1, imm1)}"
+                return f"{op}{imstr} {op_val(op1, imm1)}"
             elif op == "JRE":
                 return f"{op}"
             elif op == "HCF":
@@ -78,7 +81,18 @@ class MiniMachineVM:
                 return f"{op} ???"
         else:
             return "???"
-
+    def program_format(self):
+        # Format the program as a hex string for display
+        # 4-byte instructions, each byte as two hex digits, separeted by spaces
+        #with each instruction separated by two spaces, and each group of 4 instructions on a new line
+        lines = []
+        for i in range(0, len(self.program), 4):
+            instr = self.program[i:i+4]
+            if len(instr) < 4:
+                instr += b'\x00' * (4 - len(instr))
+            hex_instr = ' '.join(f"{b:02X}" for b in instr)
+            lines.append(hex_instr)
+        return '\n'.join('  '.join(lines[i:i+4]) for i in range(0, len(lines), 4))
     def run(self):
         while not self.halted:
             instr = self.fetch()
@@ -89,7 +103,7 @@ class MiniMachineVM:
                 print(f"Instr: {[hex(b) for b in instr]}")
                 print(f"Disasm: {self.disassemble(instr)}")
                 print(f"Registers: {self.reg}")
-                print(f"Program view: {self.program.hex()}")
+                print(f"Program view: {self.program.hex().upper()}")
                 input("Press Enter to step...")
             self.execute(instr)
             # PC increment unless changed by jump/call/halt
@@ -229,13 +243,37 @@ class MiniMachineVM:
 
 if __name__ == "__main__":
     debug = False
+    v_opt = 0
     if "--debug" in sys.argv:
         debug = True
         sys.argv.remove("--debug")
+    if "-vv" in sys.argv:
+        v_opt = 2
+        sys.argv.remove("-vv")
+    elif "-v" in sys.argv:
+        v_opt = 1
+        sys.argv.remove("-v")
     if len(sys.argv) < 2:
-        print("Usage: python vm.py <program.bin> [--debug]")
+        print("Usage: python vm.py <program.bin> [--debug] [-v|-vv]")
         sys.exit(1)
     with open(sys.argv[1], "rb") as f:
         program = f.read()
     vm = MiniMachineVM(program, debug=debug)
+    if v_opt == 1:
+        print("Program (hex):")
+        print(vm.program_format())
+        sys.exit(0)
+    elif v_opt == 2:
+        print("Program (hex):")
+        print(vm.program_format())
+        print("\nDisassembly:")
+        for i in range(0, len(program), 4):
+            instr = program[i:i+4]
+            if len(instr) < 4:
+                instr += b'\x00' * (4 - len(instr))
+            addr = i // 4
+            disasm = vm.disassemble(instr)
+            hex_instr = ' '.join(f"{b:02X}" for b in instr)
+            print(f"{addr:02X}: {hex_instr}  {disasm}")
+        sys.exit(0)
     vm.run()
