@@ -57,7 +57,9 @@ Two's complement is used for signed integers, so `0x80` is `-128`, and `0x7F` is
 
 In operations where `DEST` is not used, the value in `DEST` should be 0 by specification, and is ignored by the operation.  
 The same applies to `OP2` in `NOT`, `NOP`, `PUSH`, `POP`, `CALL`, `MOV`, `JRE`, and `HCF` instructions, which are ignored and should be set to 0 by specification.
-The only times `OP1` is ignored is in the `NOP` and `HCF` instructions, which are no-ops and halt the program, respectively. `OP1` should be set to 0 by specification in these cases.
+The only times `OP1` is ignored are in the `NOP` and `HCF` instructions, which are no-ops and halt the program, respectively. `OP1` should be set to 0 by specification in these cases.
+
+
 
 ####  WRT
 The `WRT` instruction writes the value in OP1 to the terminal.
@@ -114,6 +116,8 @@ This is equivalent to the instruction  `ADD r0, r4, r1`, where `r4` is set to `0
 Immediates can only be used as the first or second operand of an instruction, and cannot be used as the destination of an instruction.
 If the operation does not use the second, the immediate bit is ignored, and should be set to `0`. The same applies to the first operand, which is ignored if the operation does not use it.
 
+
+
 ## Suggested Assembler Macros
 
 The following macros are suggested to make programming in this ISA easier:
@@ -136,6 +140,13 @@ STORE src, addr_reg:
     MOV src, r5
 
 ```
+
+## Recommended Assembler Behavior
+The assembler SHOULD:
+- Automatically fill in the immediate bits for instructions that require them, such as `MOV`, `ADD`, `SUB`, etc.
+- Automatically fill in the immediate bits with `0` for instructions that do not use them, such as `NOP`, `HCF`, etc.
+- If arguments are not provided and the instruction does not require them, the assembler SHOULD fill the arguments with `0` by default. For example, `MOV r0, r1` should be equivalent to `MOV r0, 0x00, r1`. In cases where this is ambiguous or impossible, the assembler SHOULD error out and warn the user.
+- If DEST is not provided, the assembler SHOULD fill it with `r0` by default, and MUST warn the user during assembly. 
 
 
 
