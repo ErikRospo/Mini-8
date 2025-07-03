@@ -20,6 +20,65 @@ class MiniMachineVM:
         instr = self.program[idx:idx+4]
         return instr
 
+    def disassemble(self, instr):
+        opcode, op1, op2, dest = instr
+        imm1 = (opcode >> 6) & 1
+        imm2 = (opcode >> 5) & 1
+        opclass = (opcode >> 3) & 0x3
+        subtype = opcode & 0x7
+
+        def reg_name(idx):
+            return f"r{idx}"
+
+        def op_val(val, imm):
+            return f"{val}" if imm else reg_name(val & 0x7)
+
+        if opclass == 0b00:
+            # ALU
+            alu_ops = ["AND", "ROR", "ADD", "XOR", "OR", "ROL", "SUB", "NOT"]
+            op = alu_ops[subtype] if subtype < len(alu_ops) else "???"
+            if op == "NOT":
+                return f"{op} {op_val(op1, imm1)}, {reg_name(dest & 0x7)}"
+            else:
+                return f"{op} {op_val(op1, imm1)}, {op_val(op2, imm2)}, {reg_name(dest & 0x7)}"
+        elif opclass == 0b01:
+            # COND
+            cond_ops = ["JMP", "JNE", "JGE", "JGT", "NOP", "JEQ", "JLT", "JLE"]
+            op = cond_ops[subtype] if subtype < len(cond_ops) else "???"
+            if op == "JMP":
+                return f"{op} {dest}"
+            elif op == "NOP":
+                return f"{op}"
+            else:
+                return f"{op} {op_val(op1, imm1)}, {op_val(op2, imm2)}, {dest}"
+        elif opclass == 0b10:
+            # IO
+            io_ops = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "JRE", "HCF"]
+            op = io_ops[subtype] if subtype < len(io_ops) else "???"
+            if op == "MOV":
+                return f"{op} {op_val(op1, imm1)}, {reg_name(dest & 0x7)}"
+            elif op == "SWAP":
+                return f"{op} {reg_name(op1 & 0x7)}, {reg_name(dest & 0x7)}"
+            elif op == "PUSH":
+                return f"{op} {op_val(op1, imm1)}"
+            elif op == "POP":
+                return f"{op} {reg_name(dest & 0x7)}"
+            elif op == "WRT":
+                fmt_names = ["ASC", "DEC", "ALP", "HEX"]
+                fmt = op2 & 0x3
+                fmt_str = fmt_names[fmt] if fmt < len(fmt_names) else str(fmt)
+                return f"{op} {op_val(op1, imm1)}, {fmt_str}"
+            elif op == "CALL":
+                return f"{op} {op_val(op1, imm1)}"
+            elif op == "JRE":
+                return f"{op}"
+            elif op == "HCF":
+                return f"{op}"
+            else:
+                return f"{op} ???"
+        else:
+            return "???"
+
     def run(self):
         while not self.halted:
             instr = self.fetch()
@@ -28,6 +87,7 @@ class MiniMachineVM:
             if self.debug:
                 print(f"\nPC: {self.reg[self.PC]}")
                 print(f"Instr: {[hex(b) for b in instr]}")
+                print(f"Disasm: {self.disassemble(instr)}")
                 print(f"Registers: {self.reg}")
                 print(f"Program view: {self.program.hex()}")
                 input("Press Enter to step...")

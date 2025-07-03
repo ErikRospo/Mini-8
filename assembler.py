@@ -216,9 +216,14 @@ def assemble(lines):
             if arg in labels:
                 args[i] = str(labels[arg])
         # Fill missing args
-        while len(args) < 3:
-            args.append('0')
+        if len(args)==1:
+            raise ValueError(f"Invalid instruction: {mnemonic} with only one operand")
+        if len(args)==2:
+            args.insert(1, '0')  # Add 0 for op2 if only one operand
+            print(f"Warning: {mnemonic} instruction with only one op and one dest, assuming 0 for op2 on {line}")
         op1, op2, dest = args[:3]
+        if mnemonic not in OPCODES:
+            raise ValueError(f"Unknown mnemonic: {mnemonic}")
         opcode = encode_opcode(mnemonic, op1, op2)
         b1 = opcode
         b2 = encode_operand(op1, constants)
