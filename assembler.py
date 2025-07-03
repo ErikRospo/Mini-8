@@ -292,7 +292,8 @@ def assemble(lines):
             instr[3] = addr & 0xFF
         else:
             raise ValueError("Invalid operand index for label patching")
-
+    assert pc<256, "Program is too long, must be under 256 bytes long"
+    print(f"Program is {pc}/256 ({hex(pc).upper()}/0xFF) instructions long")
     return output
 
 
