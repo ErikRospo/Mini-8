@@ -90,7 +90,33 @@ def encode_operand(val, constants):
     if is_register(val):
         return REGISTERS[val]
     return parse_value(val, constants) & 0xFF
+def handle_shorthand_op(op: str, args: List[str]) -> List[str]:
+    if op == "MOV":
+        if len(args) == 2:
+            args.insert(1, "0")
+    elif op == "HCF":
+        args = ["0", "0", "0"]
+    elif op == "WRT":
+        if len(args) == 1:
+            args.append("0")
+            print(
+                f"Warning: WRT with one argument: {args}. Defaulting to mode 0, ASCII"
+            )
+        if len(args) == 2:  # make DEST 0
+            args.append("0")
+    elif op == "PUSH" and len(args) == 1:
+        args.append("0")
+        args.append("0")
+    elif op == "POP" and len(args) == 1:
+        args = ["0", "0", args[0]]
+    elif op=="JMP" and len(args)==1:
+        args= ["0", "0",args[0]]
+    elif op=="CALL" and len(args)==1:
+        args.append("0")
+        args.append("0")
+        
 
+    return args
 
 # --- Assembler core ---
 def assemble(lines):
@@ -194,32 +220,13 @@ def assemble(lines):
                 result.append(line)
         return result
 
-    def handle_shorthand_op(op: str, args: List[str]) -> List[str]:
-        if op == "MOV":
-            if len(args) == 2:
-                args.insert(1, "0")
-        elif op == "HCF":
-            args = ["0", "0", "0"]
-        elif op == "WRT":
-            if len(args) == 1:
-                args.append("0")
-                print(
-                    f"Warning: WRT with one argument: {args}. Defaulting to mode 0, ASCII"
-                )
-            if len(args) == 2:  # make DEST 0
-                args.append("0")
-        elif op == "PUSH" and len(args) == 1:
-            args.append("0")
-            args.append("0")
-        elif op == "POP" and len(args) == 1:
-            args = ["0", "0", args[0]]
 
-        return args
 
     expanded = expand_macros(expanded)
     # Second pass: assemble instructions
     pc = 0
     output = []
+    unresolved =[] #list of (inst_index, arg_index, arg_name)
     for line in expanded:
         # Remove inline labels (should not be present after first pass, but just in case)
         while True:
@@ -251,9 +258,16 @@ def assemble(lines):
         for i, arg in enumerate(args):
             if arg in labels:
                 args[i] = str(labels[arg])
+            elif not is_register(arg) and not arg.isdigit() and not arg.startswith("0x") and not arg.startswith("0b") and not arg.startswith("'") and not arg.startswith('"'):
+                unresolved.append((len(output),i,arg))
+                constants[arg]=0
         # Fill missing args
         args = handle_shorthand_op(mnemonic, args)
-        op1, op2, dest = args[:3]
+        try:
+            op1, op2, dest = args[:3]
+        except ValueError:
+            print(f"Not enough args for operator: {mnemonic} {args} ")
+            exit(1)
         if mnemonic not in OPCODES:
             raise ValueError(f"Unknown mnemonic: {mnemonic}")
         opcode = encode_opcode(mnemonic, op1, op2)
@@ -261,8 +275,24 @@ def assemble(lines):
         b2 = encode_operand(op1, constants)
         b3 = encode_operand(op2, constants)
         b4 = encode_operand(dest, constants)
-        output.append(bytes([b1, b2, b3, b4]))
+        output.append(bytearray([b1, b2, b3, b4]))
         pc += 1
+    for instr_index, arg_index, label_name in unresolved:
+        if label_name not in labels:
+            raise ValueError(f"Undefined label: {label_name}")
+        addr = labels[label_name]
+        # Patch the correct byte in the instruction
+        instr = output[instr_index]
+        # Figure out which operand to patch
+        if arg_index == 0:
+            instr[1] = addr & 0xFF
+        elif arg_index == 1:
+            instr[2] = addr & 0xFF
+        elif arg_index == 2:
+            instr[3] = addr & 0xFF
+        else:
+            raise ValueError("Invalid operand index for label patching")
+
     return output
 
 

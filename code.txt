@@ -1,7 +1,10 @@
-define HEXPRINT($arg):
+JMP main
+
+
+label hexprint:
     PUSH r1
     PUSH r0
-    MOV $arg, r1 ; Keep a copy of the result in r1 for high nibble
+    MOV r0, r1 ; Keep a copy of the result in r1 for high nibble
     AND r1, 0xF0, r1 ; Get the high nibble of r1
     ; move it down to the low nibble for printing
     ROR r1, 0x04, r1
@@ -11,7 +14,9 @@ define HEXPRINT($arg):
     WRT r0, 0b11; Write low nibble to the terminal in hex format
     POP r0
     POP r1
-end
+    POP r7 ; RET 
+
+label main:
 
 MOV 0x00, r0
 MOV 0x01, r1
@@ -25,11 +30,11 @@ label loop: ; fibonacci numbers
     SUB r2, 0x01, r2 ; Decrement r2
     JNE r2, 0x00, loop
 
-HEXPRINT r0
+CALL hexprint
 WRT 10, 0b00 ; Write newline to the terminal in ascii format
 
 ADD r0, 0x0B, r0 
-HEXPRINT r0
+CALL hexprint
 WRT 32, 0b00 ; Write space to the terminal in ascii format
 
 
