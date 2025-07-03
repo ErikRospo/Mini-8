@@ -61,5 +61,3 @@ WRT 'r', 0b00
 WRT 'l', 0b00
 WRT 'd', 0b00
 WRT '!', 0b00
-WRT 10, 0b00
-

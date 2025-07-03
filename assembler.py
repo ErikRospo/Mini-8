@@ -272,13 +272,9 @@ def assemble(lines):
     for instr_idx, arg_idx, label in unresolved:
         if label not in labels:
             raise ValueError(f"Undefined label: {label}")
-        print(f"{instr_idx=} {arg_idx=} {label=} {labels=}")
         val = labels[label] & 0xFF
-        print(val)
         # arg_idx: 0=op1, 1=op2, 2=dest
-        print(output[instr_idx])
         output[instr_idx][arg_idx + 1] = val  # +1 because b1 is opcode
-        print(output[instr_idx])
 
     assert pc<256, "Program is too long, must be under 256 bytes long"
     print(f"Program is {pc}/256 ({hex(pc).upper()}/0xFF) instructions long")
