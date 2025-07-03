@@ -98,7 +98,6 @@ def assemble(lines):
         if line.startswith('define '):
             # Support macro arguments: define MACRO(arg1,arg2): ... end
             m = re.match(r'define\s+(\w+)(\((.*?)\))?(\:)?\s*(.*)', line)
-            print(f"Processing line {i}: {line}")
             if m:
                 name = m.group(1)
                 arglist = m.group(3)
@@ -234,7 +233,6 @@ def assemble(lines):
         # Fill missing args
         args=handle_shorthand_op(mnemonic,args)
         op1, op2, dest = args[:3]
-        print(op1,op2,dest)
         if mnemonic not in OPCODES:
             raise ValueError(f"Unknown mnemonic: {mnemonic}")
         opcode = encode_opcode(mnemonic, op1, op2)
