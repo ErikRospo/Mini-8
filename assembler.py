@@ -1,5 +1,5 @@
 import re
-import sys
+from typing import List
 
 # --- ISA encoding tables (partial, extend as needed) ---
 OPCODES = {
@@ -46,6 +46,9 @@ def parse_value(val, constants):
     val = val.strip()
     if val in constants:
         return constants[val]
+    if (len(val) == 3 and ((val[0] == val[-1] == "'") or (val[0] == val[-1] == '"'))):
+        # Char literal, e.g. 'A' or "A"
+        return ord(val[1])
     if val.startswith('0x'):
         return int(val, 16)
     if val.startswith('0b'):
@@ -180,7 +183,20 @@ def assemble(lines):
         return result
 
     expanded = expand_macros(expanded)
-
+    def handle_shorthand_op(op:str, args:List[str])->List[str]:
+        if op=="MOV":
+            if len(args)==2:
+                args.insert(1,"0")
+        elif op=="HCF":
+            args=["0","0","0"]
+        elif op=="WRT":
+            if len(args)==1:
+                args.append("0")
+                print(f"Warning: WRT with one argument: {args}. Defaulting to mode 0, ASCII")
+            if len(args)==2: #make DEST 0
+                args.append("0")
+                
+        return args
     # Second pass: assemble instructions
     pc = 0
     output = []
@@ -216,12 +232,9 @@ def assemble(lines):
             if arg in labels:
                 args[i] = str(labels[arg])
         # Fill missing args
-        if len(args)==1:
-            raise ValueError(f"Invalid instruction: {mnemonic} with only one operand")
-        if len(args)==2:
-            args.insert(1, '0')  # Add 0 for op2 if only one operand
-            print(f"Warning: {mnemonic} instruction with only one op and one dest, assuming 0 for op2 on {line}")
+        args=handle_shorthand_op(mnemonic,args)
         op1, op2, dest = args[:3]
+        print(op1,op2,dest)
         if mnemonic not in OPCODES:
             raise ValueError(f"Unknown mnemonic: {mnemonic}")
         opcode = encode_opcode(mnemonic, op1, op2)

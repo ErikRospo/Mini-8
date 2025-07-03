@@ -167,9 +167,13 @@ end
 The assembler SHOULD:
 - Automatically fill in the immediate bits for instructions that require them, such as `MOV`, `ADD`, `SUB`, etc.
 - Automatically fill in the immediate bits with `0` for instructions that do not use them, such as `NOP`, `HCF`, etc.
-- If arguments are not provided and the instruction does not require them, the assembler SHOULD fill the arguments with `0` by default. For example, `MOV r0, r1` should be equivalent to `MOV r0, 0x00, r1`. In cases where this is ambiguous or impossible, the assembler SHOULD error out and warn the user.
-- If DEST is not provided, the assembler SHOULD fill it with `r0` by default, and MUST warn the user during assembly. 
-
+- If arguments are not provided and the instruction does not require them, the assembler SHOULD fill the arguments with `0` by default. For example, `MOV r0, r1` should be equivalent to `MOV r0, 0x00, r1`. In cases where this is ambiguous or impossible, the assembler SHOULD error out and warn the user. 
+- If DEST is not provided, the assembler SHOULD fill it with `r0` by default, and MUST warn the user during assembly. The exception to warning the user is for instructions that do not use DEST, such as `NOP` or `WRT`. See the [Subtypes](#subtypes) table for a comprehensive list of instructions that do not use `DEST`
+- The assembler must support the following immediate argument types: 
+      - Decimal (default). Any integer value specified without a prefix should be interpreted as a base-10 integer.
+      - Hexadecimal. Any integer value specified with the `0x` prefix should be interpreted as a base-16 integer.
+      - Binary. Any integer value specified with the `0b` prefix should be interpreted as a base 2 (binary) number.
+      - Character. Any single letter specified between single or double quotes (`'` or `"`) should be interpreted as a number corresponding to it's ASCII ordinal. If that character is not part of the ASCII standard, an assembler error should be raised.
 ## Assembler Directives
 The assembler SHOULD support the following directives:
 1. `label label_name:`
@@ -188,7 +192,7 @@ Macros can take arguments, and the assembler SHOULD replace the arguments with t
 
 
 ## Memory
-The ISA has 256 bytes of RAM, which can be indirectly accessed using the `r4` and `r5` registers.
+The ISA can index 256 bytes of RAM, which can be indirectly accessed using the `r4` and `r5` registers.
 The memory is byte-addressable. `r5` is used to read/write data from/to RAM. `r4` is used to point to the current RAM address.
 - Writing to memory can be done by *ANY* instruction that has `r5` as the destination, and reading from memory can be done by *ANY* instruction that has `r5` as the source. 
 This is intentionally designed to be flexible, but it is powerful and should be used with care.
