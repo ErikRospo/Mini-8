@@ -125,7 +125,14 @@ Immediates can only be used as the first or second operand of an instruction, an
 
 If the operation does not use the second, the immediate bit is ignored, and should be set to `0`. The same applies to the first operand, which is ignored if the operation does not use it.
 
+## Stack
+How the stack is implemented is left up to implementations. However, it must follow several properties:
+1. The stack length MUST be at least 256 bytes long
+      - Overflowing the stack pointer by assuming it is 8 bits long is not recommended, as implementations may vary on their overflow behavior.
+2. A `PUSH` followed by a `POP`, both with the same arguments, should leave the processor state unchanged.
+3. A `POP` on an empty stack is undefined behavior
 
+The stack pointer is left intentionally hidden from programs. This is a conscious design decision to allow for flexibility in implementations. 
 
 ## Suggested Assembler Macros
 
@@ -181,11 +188,12 @@ The assembler SHOULD:
 
 ## Assembler Directives
 The assembler SHOULD support the following directives:
-1. `label label_name:`
+1. `label $label_name:`
 This directive defines a label that can be used to jump to a specific location in the code.  
 This allows for easier code organization and readability, as well as the ability to jump to specific locations in the code without having to calculate the address manually.
-Labels can be used in jump instructions, such as `JMP label_name`, `JNE label_name`, `JGE label_name`, etc.  
+Labels can be used in jump instructions, such as `JMP $label_name`, `JNE $label_name`, `JGE $label_name`, etc.  
 The assembler SHOULD automatically calculate the address of the label, and replace the label with the address in the generated machine code.
+Labels should start with a `$` wherever they are used
 
 2. `define constant_name value`
 This directive defines a constant that can be used in the code. The assembler SHOULD replace all occurrences of the constant with the value in the generated machine code.

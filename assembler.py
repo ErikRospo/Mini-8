@@ -110,7 +110,7 @@ def handle_shorthand_op(op: str, args: List[str]) -> List[str]:
     elif op == "POP" and len(args) == 1:
         args = ["0", "0", args[0]]
     elif op=="JMP" and len(args)==1:
-        args= ["0", "0",args[0]]
+        args= ["0", "0", args[0]]
     elif op=="CALL" and len(args)==1:
         args.append("0")
         args.append("0")
@@ -165,18 +165,7 @@ def assemble(lines):
                     constants[name] = parse_value(rest, constants)
                     i += 1
                     continue
-        # Handle multiple labels on the same line, e.g. "foo: bar: instr"
-        while True:
-            m = re.match(r"^(\w+):\s*(.*)", line)
-            if m:
-                label = m.group(1)
-                rest = m.group(2)
-                labels[label] = pc
-                line = rest
-                if not line:
-                    break
-            else:
-                break
+
         if not line:
             i += 1
             continue
@@ -226,7 +215,7 @@ def assemble(lines):
     # Second pass: assemble instructions
     pc = 0
     output = []
-    unresolved =[] #list of (inst_index, arg_index, arg_name)
+    unresolved =[]
     for line in expanded:
         # Remove inline labels (should not be present after first pass, but just in case)
         while True:
@@ -253,16 +242,19 @@ def assemble(lines):
             # pc += 1  # Increment PC for label definition
             continue
         args = tokens[1:]
+        # Fill missing args
+        args = handle_shorthand_op(mnemonic, args)
+        
         # Macro expansion handled above
         # Label resolution in args (support labels as operands)
         for i, arg in enumerate(args):
             if arg in labels:
                 args[i] = str(labels[arg])
-            elif not is_register(arg) and not arg.isdigit() and not arg.startswith("0x") and not arg.startswith("0b") and not arg.startswith("'") and not arg.startswith('"'):
-                unresolved.append((len(output),i,arg))
-                constants[arg]=0
-        # Fill missing args
-        args = handle_shorthand_op(mnemonic, args)
+            elif re.match(r"^\$[A-Za-z_]\w*$", arg):  # Looks like a label
+                # Mark for patching later
+                unresolved.append((len(output), i, arg))
+                args[i] = "0"  # Temporary placeholder
+
         try:
             op1, op2, dest = args[:3]
         except ValueError:
@@ -277,21 +269,17 @@ def assemble(lines):
         b4 = encode_operand(dest, constants)
         output.append(bytearray([b1, b2, b3, b4]))
         pc += 1
-    for instr_index, arg_index, label_name in unresolved:
-        if label_name not in labels:
-            raise ValueError(f"Undefined label: {label_name}")
-        addr = labels[label_name]
-        # Patch the correct byte in the instruction
-        instr = output[instr_index]
-        # Figure out which operand to patch
-        if arg_index == 0:
-            instr[1] = addr & 0xFF
-        elif arg_index == 1:
-            instr[2] = addr & 0xFF
-        elif arg_index == 2:
-            instr[3] = addr & 0xFF
-        else:
-            raise ValueError("Invalid operand index for label patching")
+    for instr_idx, arg_idx, label in unresolved:
+        if label not in labels:
+            raise ValueError(f"Undefined label: {label}")
+        print(f"{instr_idx=} {arg_idx=} {label=} {labels=}")
+        val = labels[label] & 0xFF
+        print(val)
+        # arg_idx: 0=op1, 1=op2, 2=dest
+        print(output[instr_idx])
+        output[instr_idx][arg_idx + 1] = val  # +1 because b1 is opcode
+        print(output[instr_idx])
+
     assert pc<256, "Program is too long, must be under 256 bytes long"
     print(f"Program is {pc}/256 ({hex(pc).upper()}/0xFF) instructions long")
     return output
@@ -303,7 +291,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input assembly file")
-    parser.add_argument("-o", "--output", help="Output binary file", default="a.out")
+    parser.add_argument("-o", "--output", help="Output binary file", default="out.mc8")
     args = parser.parse_args()
     with open(args.input) as f:
         lines = f.readlines()

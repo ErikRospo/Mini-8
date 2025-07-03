@@ -260,11 +260,15 @@ if __name__ == "__main__":
     elif "-v" in sys.argv:
         v_opt = 1
         sys.argv.remove("-v")
+    
     if len(sys.argv) < 2:
-        print("Usage: python vm.py <program.bin> [--debug] [-v|-vv]")
-        sys.exit(1)
-    with open(sys.argv[1], "rb") as f:
+        program_file = "out.mc8"
+        print("No program specified, defaulting to out.mc8")
+    else:
+        program_file = sys.argv[1]
+    with open(program_file, "rb") as f:
         program = f.read()
+        
     vm = MiniMachineVM(program, debug=debug)
     if v_opt == 1:
         print("Program (hex):")
