@@ -12,12 +12,16 @@ label loop:
     SUB r2, 0x01, r2 ; Decrement r2
     JNE r2, 0x00, loop
 
-; Write result to TERM
+WRT 0, 0b00 ; Clear the terminal
+; Write result to the terminal
+
 MOV r0, r1 ; Keep a copy of the result in r1 for high nibble
 AND r1, 0xF0, r1 ; Get the high nibble of r1
 ; move it down to the low nibble for printing
 ROR r1, 0x04, r1
-WRT r1, 0b11 ; Write high nibble to TERM in hex format
+WRT r1, 0b11 ; Write high nibble to the terminal in hex format
 
 AND r0, 0x0F, r0 ; Get the last 4 bits of r0
-WRT r0, 0b11 ; Write low nibble to TERM in hex format
+WRT r0, 0b11 ; Write low nibble to the terminal in hex format
+
+WRT 10, 0b00 ; Write newline to the terminal in ascii format
