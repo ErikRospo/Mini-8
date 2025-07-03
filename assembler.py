@@ -160,15 +160,14 @@ def assemble(lines):
                 actual_args = tokens[1:1+len(macro_args)]
                 arg_map = dict(zip(macro_args, actual_args))
                 # Support parent macro argument substitution
-                def subst_args(l):
+                def subst_args(l:str):
                     # Replace $arg or {arg} with value
                     for k, v in arg_map.items():
-                        l = re.sub(rf'\${k}\b', v, l)
-                        l = re.sub(rf'\{{{k}\}}', v, l)
+                        l =  l.replace(f"{k}",v)
                     if parent_args:
                         for k, v in parent_args.items():
-                            l = re.sub(rf'\${k}\b', v, l)
-                            l = re.sub(rf'\{{{k}\}}', v, l)
+                            l =  l.replace(f"{k}",v)
+                            
                     return l
                 expanded_body = [subst_args(l) for l in macro_body]
                 result.extend(expand_macros(expanded_body, arg_map))
@@ -176,12 +175,10 @@ def assemble(lines):
                 # Substitute parent macro arguments if any
                 if parent_args:
                     for k, v in parent_args.items():
-                        line = re.sub(rf'\${k}\b', v, line)
-                        line = re.sub(rf'\{{{k}\}}', v, line)
+                        line =  line.replace(f"{k}",v)
                 result.append(line)
         return result
 
-    expanded = expand_macros(expanded)
     def handle_shorthand_op(op:str, args:List[str])->List[str]:
         if op=="MOV":
             if len(args)==2:
@@ -194,8 +191,14 @@ def assemble(lines):
                 print(f"Warning: WRT with one argument: {args}. Defaulting to mode 0, ASCII")
             if len(args)==2: #make DEST 0
                 args.append("0")
+        elif op=="PUSH" and len(args)==1:
+            args.append("0")
+            args.append("0")
+        elif op=="POP" and len(args)==1:
+            args=["0","0",args[0]]
                 
         return args
+    expanded=expand_macros(expanded)
     # Second pass: assemble instructions
     pc = 0
     output = []

@@ -178,6 +178,7 @@ The assembler SHOULD:
                   1. `,` (comma, ASCII `0x2C`)
                   2. `:` (colon, ASCII `0x3A`)
             - Implementations MUST error if any non-printable ASCII character (those with ordinals `0x00`-`0x1F` and `0x7f`) is found inside a character literal.
+
 ## Assembler Directives
 The assembler SHOULD support the following directives:
 1. `label label_name:`
@@ -192,6 +193,7 @@ This directive defines a constant that can be used in the code. The assembler SH
 3. `define macro_name(arg0, arg1): ... end`
 This directive defines a macro that can be used in the code. The assembler SHOULD replace all occurrences of the macro with the expanded code in the generated machine code.
 Macros can take arguments, and the assembler SHOULD replace the arguments with the values provided in the macro call.
+
 
 
 
