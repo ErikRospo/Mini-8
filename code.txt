@@ -23,8 +23,11 @@ AND r0, 0x0F, r0 ; Get the last 4 bits of r0
 WRT r0, 0b11; Write low nibble to the terminal in hex format
 WRT 10, 0b00 ; Write newline to the terminal in ascii format
 
+; Write out "Hello, world!\n". Use a loop for 'll' to show how such a control structure could be implemented.
+
 WRT 'H', 0b00
 WRT 'e', 0b00
+
 MOV 2, r0
     
 label lLoop:

@@ -174,6 +174,10 @@ The assembler SHOULD:
       - Hexadecimal. Any integer value specified with the `0x` prefix should be interpreted as a base-16 integer.
       - Binary. Any integer value specified with the `0b` prefix should be interpreted as a base 2 (binary) number.
       - Character. Any single letter specified between single or double quotes (`'` or `"`) should be interpreted as a number corresponding to it's ASCII ordinal. If that character is not part of the ASCII standard, an assembler error should be raised.
+            - Implementations MAY error if special characters are used in character literals. Special characters that Assemblers may warn are the following:
+                  1. `,` (comma, ASCII `0x2C`)
+                  2. `:` (colon, ASCII `0x3A`)
+            - Implementations MUST error if any non-printable ASCII character (those with ordinals `0x00`-`0x1F` and `0x7f`) is found inside a character literal.
 ## Assembler Directives
 The assembler SHOULD support the following directives:
 1. `label label_name:`
