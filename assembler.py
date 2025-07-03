@@ -93,9 +93,16 @@ def assemble(lines):
             i += 1
             continue
         if line.startswith('define '):
-            m = re.match(r'define\s+(\w+)(:)?\s*(.*)', line)
+            # Support macro arguments: define MACRO(arg1,arg2):
+            m = re.match(r'define\s+(\w+)(\((.*?)\))?(\:)?\s*(.*)', line)
             if m:
-                name, colon, rest = m.group(1), m.group(2), m.group(3)
+                name = m.group(1)
+                arglist = m.group(3)
+                colon = m.group(4)
+                rest = m.group(5)
+                macro_args = []
+                if arglist:
+                    macro_args = [a.strip() for a in arglist.split(',') if a.strip()]
                 if colon:
                     # Macro: collect lines until next define or EOF
                     macro_lines = []
@@ -107,7 +114,7 @@ def assemble(lines):
                         if next_line:
                             macro_lines.append(next_line)
                         i += 1
-                    macros[name.upper()] = macro_lines
+                    macros[name.upper()] = (macro_args, macro_lines)
                     continue
                 else:
                     constants[name] = parse_value(rest, constants)
@@ -121,8 +128,8 @@ def assemble(lines):
         pc += 1
         i += 1
 
-    # Macro expansion (recursive, no args)
-    def expand_macros(lines):
+    # Macro expansion (recursive, with args)
+    def expand_macros(lines, parent_args=None):
         result = []
         for line in lines:
             tokens = re.split(r'[,\s]+', line.strip())
@@ -130,9 +137,30 @@ def assemble(lines):
                 continue
             mnemonic = tokens[0].upper()
             if mnemonic in macros:
-                # Expand macro recursively
-                result.extend(expand_macros(macros[mnemonic]))
+                macro_args, macro_body = macros[mnemonic]
+                # Parse actual arguments from invocation
+                # e.g. MACRO x, y, z
+                actual_args = tokens[1:1+len(macro_args)]
+                arg_map = dict(zip(macro_args, actual_args))
+                # Support parent macro argument substitution
+                def subst_args(l):
+                    # Replace $arg or {arg} with value
+                    for k, v in arg_map.items():
+                        l = re.sub(rf'\${k}\b', v, l)
+                        l = re.sub(rf'\{{{k}\}}', v, l)
+                    if parent_args:
+                        for k, v in parent_args.items():
+                            l = re.sub(rf'\${k}\b', v, l)
+                            l = re.sub(rf'\{{{k}\}}', v, l)
+                    return l
+                expanded_body = [subst_args(l) for l in macro_body]
+                result.extend(expand_macros(expanded_body, arg_map))
             else:
+                # Substitute parent macro arguments if any
+                if parent_args:
+                    for k, v in parent_args.items():
+                        line = re.sub(rf'\${k}\b', v, line)
+                        line = re.sub(rf'\{{{k}\}}', v, line)
                 result.append(line)
         return result
 

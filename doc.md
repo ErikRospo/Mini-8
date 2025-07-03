@@ -124,24 +124,24 @@ If the operation does not use the second, the immediate bit is ignored, and shou
 
 The following macros are suggested to make programming in this ISA easier:
 ```assembly
-define ZERO reg:
+define ZERO(reg):
       MOV 0x00, reg
-define INC reg:
+define INC(reg):
       ADD reg, 0x01, reg
-define DEC reg:
+define DEC(reg):
       SUB reg, 0x01, reg
 define RET:
       POP r7
 
-define LOAD addr_reg, dest:
+define LOAD(addr_reg, dest):
     MOV addr_reg, RAMVAL
     MOV RAMDATA, dest
 
-define STORE src, addr_reg:
+define STORE(src, addr_reg):
     MOV addr_reg, RAMVAL
     MOV src, RAMDATA
 
-define SAVE val: 
+define SAVE(val): 
    MOV RAMDATA, val
    ADD RAMADDR, 0x01, RAMADDR
 ```
@@ -164,7 +164,7 @@ The assembler SHOULD automatically calculate the address of the label, and repla
 2. `define constant_name value`
 This directive defines a constant that can be used in the code. The assembler SHOULD replace all occurrences of the constant with the value in the generated machine code.
 
-3. `define macro_name args:`
+3. `define macro_name(arg0, arg1):`
 This directive defines a macro that can be used in the code. The assembler SHOULD replace all occurrences of the macro with the expanded code in the generated machine code.
 Macros can take arguments, and the assembler SHOULD replace the arguments with the values provided in the macro call.
 
