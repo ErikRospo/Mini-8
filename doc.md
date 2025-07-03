@@ -132,13 +132,16 @@ RET:
       POP r7
 
 LOAD addr_reg, dest:
-    MOV addr_reg, r4
-    MOV r5, dest
+    MOV addr_reg, RAMVAL
+    MOV RAMDATA, dest
 
 STORE src, addr_reg:
-    MOV addr_reg, r4
-    MOV src, r5
+    MOV addr_reg, RAMVAL
+    MOV src, RAMDATA
 
+SAVE val: 
+   MOV RAMDATA, val
+   ADD RAMVAL, 0x01, RAMVAL
 ```
 
 ## Recommended Assembler Behavior
