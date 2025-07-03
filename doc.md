@@ -4,21 +4,19 @@
 `OPCODE OPERAND1 OPERAND2 DEST`
 
 ## Opcode Bits
+Opcode is a 1 byte value, with the following structure:
 
-
-`01234567`  
-`0`: Reserved (bit 7)  
-`12`: Operands *1* and *2*, respectively. If set, operands are immediate, otherwise, they point to a [register](#Register)  
-`34`: operator class/type:  
+* Bit 7 (MSB): Reserved 
+* Bits 6-5: Operands *1* and *2*, respectively. If set, operands are immediate, otherwise, they point to a [register](#Register)  
+* Bits 4-3:  operator class/type:  
    - `00`: `ALU`/Arethmetic operations  
    - `01`: `COND`/Conditional    
    - `10`: `IO`/etc  
    - `11`: Undefined/reserved for now  
+* Bits 2-0 (LSB): operator subtype, see below
 
-`567`: operator subtype, see below
 
-
-### Subtypes (567)
+### Subtypes
 
 | `OPT`  | `VAL` | `Result`         | `NAME`  | `FULL OPC`    | `OP1` | `OP2` | `DEST` |
 |--------|-------|------------------|---------|---------------|-------|-------|--------|
@@ -30,7 +28,7 @@
 | `ALU`  | `101` | `OP1 ROL OP2`    | `ROL`   | `XXX00101`    | Yes   | Yes   | Yes    |
 | `ALU`  | `110` | `OP1 - OP2`      | `SUB`   | `XXX00110`    | Yes   | Yes   | Yes    |
 | `ALU`  | `111` | `!OP1`           | `NOT`   | `XXX00111` (ignores OP2) | Yes   | No    | Yes    |
-| `COND` | `000` | Always           | `JMP`   | `XXX01000` (unconditional jump) | Yes   | No    | No    |
+| `COND` | `000` | Always           | `JMP`   | `XXX01000` (unconditional jump) | No    | No    | Yes    |
 | `COND` | `001` | `OP1 != OP2`     | `JNE`   | `XXX01001`    | Yes   | Yes   | Yes    |
 | `COND` | `010` | `OP1 >= OP2`     | `JGE`   | `XXX01010` *  | Yes   | Yes   | Yes    |
 | `COND` | `011` | `OP1 > OP2`      | `JGT`   | `XXX01011` *  | Yes   | Yes   | Yes    |
@@ -75,6 +73,11 @@ Calling `WRT` with an immediate value greater than the maximum supported value f
 
 Calling `WRT` in ASCII format with an immediate value of `0x00` will clear the terminal. 
 
+#### Jump Instructions
+The `JMP`, `JNE`, `JGE`, `JGT`, `JEQ`, `JLT`, and `JLE` instructions are used for control flow, allowing the program to branch based on the values of the operands. The first bit in the subtype is used to negate the condition, so `JNE` is the negation of `JEQ`, and `JGE` is the negation of `JLT`. This allows for an easier implementation of control flow in hardware, as the negation can be done with a single bit flip.
+
+All jump instructions will write `DEST` to the program counter (`r7`), which is the next instruction to execute. If they succeed, they will jump to the absolute address specified by `DEST`, which is an 8-bit unsigned integer. If the jump fails, the program will continue executing the next instruction in sequence.
+
 ## Design rationale/notes
 - The ISA is designed to be simple and easy to understand, with a small set of instructions that can be used to perform a wide range of operations.
 - The first bit in the subtype of `ALU` operations is used to indicate a related operation. For example, `ROR` and `ROL` are bitwise rotations, and are paired for symmetry, as is `ADD` and `SUB` Exception: `NOT` and `XOR` are paired as outliers.
@@ -86,7 +89,7 @@ Calling `WRT` in ASCII format with an immediate value of `0x00` will clear the t
 - `r0-r3` registers are general purpose, and can be the source or destination of any operation, for any purpose.  
 - `r4` is the [RAM](#memory) address register, and is used to point to the current RAM address, along with:  
 - `r5` is the [RAM](#memory) data register, which is used to read/write data from/to RAM.
-- `r6` is reserved for future use, and should not be used in programs. Reads and writes will be discarded, and is undefined behavior.
+- `r6` is reserved for future use, and should not be used in programs. Reads from `r6` will return `0x00`, and writes to `r6` will be ignored. This is undefined behavior, and should not be relied upon.
 - `r7` is the program counter, which points to the next instruction to execute, and is used for `CALL` and `RET` operations.
 
 The canonical register names are `r0`, `r1`, `r2`, `r3`, `r4`, `r5`, and `r7`.
@@ -98,6 +101,18 @@ They can be used as the operands and/or destination of any operation, even in th
 Thus, `AND, r0, r1, r0` is a valid instruction that performs a bitwise AND operation between the values in `r0` and `r1`, and stores the result back in `r0`.
 
 Writes to `r7` WILL change the program counter, and thus the next instruction to execute.
+
+When an instruction is executed, the program counter (`r7`) is automatically incremented by 1, so the next instruction will be executed in sequence.
+Implementations should ensure that the storage medium used returns the next 32 bits/4 bytes of the program per 1 PC value. 
+That is, the PC value indexes *instructions*, *NOT* bytes.
+
+## Immediates
+
+Immediates are 8-bit unsigned integers. Any instruction that has an immediate value will act exactly as if the immediate value was loaded into a register, and then used as an operand.
+For example, the instruction `ADD r0, 0x01, r1` will add the value `0x01` to the value in `r0`, and store the result in `r1`
+This is equivalent to the instruction  `ADD r0, r4, r1`, where `r4` is set to `0x01` before the instruction is executed.
+Immediates can only be used as the first or second operand of an instruction, and cannot be used as the destination of an instruction.
+If the operation does not use the second, the immediate bit is ignored, and should be set to `0`. The same applies to the first operand, which is ignored if the operation does not use it.
 
 ## Suggested Assembler Macros
 
