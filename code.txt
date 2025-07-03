@@ -1,8 +1,29 @@
-MOV 0x05, r0
-ADD r0, 0x01, r0
-MOV r0, r1
-SUB r1, 0x02, r1
-ADD r0, r1, r0
+define DEC reg:
+      SUB reg, 0x01, reg
 
-WRT r0, 0b11 
-HCF
+
+define fib_1 r0
+define fib_2 r1
+define fib_tmp r3
+define fib_n r2
+MOV 0x00, fib_1
+MOV 0x01, fib_2
+MOV 0x10, fib_n
+
+
+label loop:
+    MOV r0, fib_tmp
+    ADD r0, r1, r0
+    MOV fib_tmp, r1
+    DEC fib_n
+    JNE fib_n, 0x00, loop
+
+; Write result to TERM
+MOV fib_1, r1 ; Keep a copy of the result in r1 for high nibble
+AND r1, 0xF0, r1 ; Get the high nibble of r1
+; move it down to the low nibble for printing
+ROR r1, 0x04, r1
+WRT r1, 0b11 ; Write high nibble to TERM in hex format
+
+AND r0, 0x0F, r0 ; Get the last 4 bits of r0
+WRT r0, 0b11 ; Write low nibble to TERM in hex format
