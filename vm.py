@@ -208,7 +208,7 @@ class MiniMachineVM:
                 self.wrt(val, fmt)
             elif subtype == 0b101:  # CALL
                 addr = self.get_operand(op1, imm1)
-                self.stack.append((self.reg[self.PC] + 1) % 256)
+                self.stack.append((self.reg[self.PC]) % 256)
                 self.set_reg(self.PC, addr)
                 return
             elif subtype == 0b110:  # JRE
