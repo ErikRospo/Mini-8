@@ -1,5 +1,6 @@
 import sys
 
+
 class MiniMachineVM:
     def __init__(self, program: bytes, debug: bool = False):
         self.reg = [0] * 8  # r0-r7
@@ -17,12 +18,14 @@ class MiniMachineVM:
         if idx + 4 > len(self.program):
             self.halted = True
             return None
-        instr = self.program[idx:idx+4]
+        instr = self.program[idx : idx + 4]
         return instr
-    def immstr(self, imm1,imm2):
-        im1s="i" if imm1 else "r"
-        im2s="i" if imm2 else "r"
+
+    def immstr(self, imm1, imm2):
+        im1s = "i" if imm1 else "r"
+        im2s = "i" if imm2 else "r"
         return f"_{im1s}{im2s}"
+
     def disassemble(self, instr):
         opcode, op1, op2, dest = instr
         imm1 = (opcode >> 6) & 1
@@ -35,7 +38,8 @@ class MiniMachineVM:
 
         def op_val(val, imm):
             return f"{val} ({hex(val)})" if imm else reg_name(val & 0x7)
-        imstr=self.immstr(imm1,imm2)
+
+        imstr = self.immstr(imm1, imm2)
         if opclass == 0b00:
             # ALU
             alu_ops = ["AND", "ROR", "ADD", "XOR", "OR", "ROL", "SUB", "NOT"]
@@ -81,18 +85,20 @@ class MiniMachineVM:
                 return f"{op} ???"
         else:
             return "???"
+
     def program_format(self):
         # Format the program as a hex string for display
         # 4-byte instructions, each byte as two hex digits, separeted by spaces
-        #with each instruction separated by two spaces, and each group of 4 instructions on a new line
+        # with each instruction separated by two spaces, and each group of 4 instructions on a new line
         lines = []
         for i in range(0, len(self.program), 4):
-            instr = self.program[i:i+4]
+            instr = self.program[i : i + 4]
             if len(instr) < 4:
-                instr += b'\x00' * (4 - len(instr))
-            hex_instr = ' '.join(f"{b:02X}" for b in instr)
+                instr += b"\x00" * (4 - len(instr))
+            hex_instr = " ".join(f"{b:02X}" for b in instr)
             lines.append(hex_instr)
-        return '\n'.join('  '.join(lines[i:i+4]) for i in range(0, len(lines), 4))
+        return "\n".join("  ".join(lines[i : i + 4]) for i in range(0, len(lines), 4))
+
     def run(self):
         while not self.halted:
             instr = self.fetch()
@@ -231,7 +237,7 @@ class MiniMachineVM:
                 print("?", end="")
         elif fmt == 2:  # Alphabetic
             if val <= 25:
-                print(chr(ord('A') + val), end="")
+                print(chr(ord("A") + val), end="")
             else:
                 print("?", end="")
         elif fmt == 3:  # Hexadecimal
@@ -240,6 +246,7 @@ class MiniMachineVM:
             else:
                 print("?", end="")
         sys.stdout.flush()
+
 
 if __name__ == "__main__":
     debug = False
@@ -268,12 +275,12 @@ if __name__ == "__main__":
         print(vm.program_format())
         print("\nDisassembly:")
         for i in range(0, len(program), 4):
-            instr = program[i:i+4]
+            instr = program[i : i + 4]
             if len(instr) < 4:
-                instr += b'\x00' * (4 - len(instr))
+                instr += b"\x00" * (4 - len(instr))
             addr = i // 4
             disasm = vm.disassemble(instr)
-            hex_instr = ' '.join(f"{b:02X}" for b in instr)
+            hex_instr = " ".join(f"{b:02X}" for b in instr)
             print(f"{addr:02X}: {hex_instr}  {disasm}")
         sys.exit(0)
     vm.run()
