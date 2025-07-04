@@ -26,6 +26,7 @@ jobs:
       - run: rm _site/.gitkeep
       - run: pandoc ISA.md --from gfm -o _site/ISA.html -s --include-in-header=./web/table-style.html
       - run: cp ./web/mini-8.html _site/mini-8.html
+      - run: cp ./web/index.html _site/index.html
       - name: Upload artifact
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v3
