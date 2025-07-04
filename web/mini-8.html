@@ -34,15 +34,16 @@
         Debug mode
     </label>
     <button id="stepBtn" onclick="stepVM()" disabled>Step</button>
+    <h2>Registers</h2>
+    <p id="registers" style="margin-top:1em;"></p>
     <h2>Output</h2>
     <pre id="output"></pre>
-    <h2>Registers</h2>
-    <pre id="registers" style="margin-top:1em;"></pre>
+
     <h2>Disassembly</h2>
     <pre id="disasm" style="margin-top:1em;"></pre>
     <script>
         let programBytes = null;
-
+        
         document.getElementById("fileInput").addEventListener("change", function (event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -274,6 +275,66 @@
                 }
                 this.execute(instr);
             }
+            disassemble(opcode, op1, op2, dest) {
+                const imm1 = (opcode >> 6) & 1;
+                const imm2 = (opcode >> 5) & 1;
+                const opclass = (opcode >> 3) & 0x3;
+                const subtype = opcode & 0x7;
+
+                const regName = idx => `r${idx & 0x7}`;
+                const opVal = (val, imm) => imm ? `${val} (0x${val.toString(16).toUpperCase()})` : regName(val);
+
+                const immStr = `_${imm1 ? 'i' : 'r'}${imm2 ? 'i' : 'r'}`;
+
+                if (opclass === 0b00) {
+                    // ALU
+                    const aluOps = ["AND", "ROR", "ADD", "XOR", "OR", "ROL", "SUB", "NOT"];
+                    const op = aluOps[subtype] || "???";
+                    if (op === "NOT") {
+                        return `${op}${immStr} ${opVal(op1, imm1)}, ${regName(dest)}`;
+                    } else {
+                        return `${op}${immStr} ${opVal(op1, imm1)}, ${opVal(op2, imm2)}, ${regName(dest)}`;
+                    }
+                } else if (opclass === 0b01) {
+                    // COND
+                    const condOps = ["JMP", "JNE", "JGE", "JGT", "NOP", "JEQ", "JLT", "JLE"];
+                    const op = condOps[subtype] || "???";
+                    if (op === "JMP") {
+                        return `${op} ${dest}`;
+                    } else if (op === "NOP") {
+                        return `${op}`;
+                    } else {
+                        return `${op}${immStr} ${opVal(op1, imm1)}, ${opVal(op2, imm2)}, ${dest}`;
+                    }
+                } else if (opclass === 0b10) {
+                    // IO
+                    const ioOps = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "JRE", "HCF"];
+                    const op = ioOps[subtype] || "???";
+                    if (op === "MOV") {
+                        return `${op}${immStr} ${opVal(op1, imm1)}, ${regName(dest)}`;
+                    } else if (op === "SWAP") {
+                        return `${op}${immStr} ${regName(op1)}, ${regName(dest)}`;
+                    } else if (op === "PUSH") {
+                        return `${op}${immStr} ${opVal(op1, imm1)}`;
+                    } else if (op === "POP") {
+                        return `${op}${immStr} ${regName(dest)}`;
+                    } else if (op === "WRT") {
+                        const fmtNames = ["ASC", "DEC", "ALP", "HEX"];
+                        const fmt = op2 & 0x3;
+                        const fmtStr = fmtNames[fmt] || fmt.toString();
+                        return `${op}${immStr} ${opVal(op1, imm1)}, ${fmtStr}`;
+                    } else if (op === "CALL") {
+                        return `${op}${immStr} ${opVal(op1, imm1)}`;
+                    } else if (op === "JRE" || op === "HCF") {
+                        return `${op}`;
+                    } else {
+                        return `${op} ???`;
+                    }
+                } else {
+                    return "???";
+                }
+            }
+
         }
     </script>
 </body>
