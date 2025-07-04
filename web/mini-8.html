@@ -28,8 +28,8 @@
             color: #111;
         }
 
-        .current-pc.dis-line::before{
-            color:#111;
+        .current-pc.dis-line::before {
+            color: #111;
             font-weight: bold;
         }
 
@@ -95,21 +95,21 @@
             opacity: 0.5;
         }
 
-    .dis-line {
-        position: relative;
-        padding-left: 2em;
-        white-space: pre;
-    }
+        .dis-line {
+            position: relative;
+            padding-left: 2em;
+            white-space: pre;
+        }
 
-    .dis-line::before {
-        content: var(--line-num);
-        position: absolute;
-        left: 0;
-        color: #0f0;
-        opacity: 0.5;
-        pointer-events: none;
-        user-select: none;
-    }
+        .dis-line::before {
+            content: var(--line-num);
+            position: absolute;
+            left: 0;
+            color: #0f0;
+            opacity: 0.5;
+            pointer-events: none;
+            user-select: none;
+        }
     </style>
 </head>
 
@@ -133,7 +133,7 @@
         <div class="panel">
             <h2>Registers</h2>
             <div class="registers" id="registers">
-            <!-- Registers rendered here -->
+                <!-- Registers rendered here -->
             </div>
             <h2>Disassembly</h2>
             <pre id="disasm"></pre>
@@ -323,7 +323,7 @@
                 const subtype = opcode & 0x7;
 
                 const regName = idx => `r${idx & 0x7}`;
-                const opVal = (val, imm) => imm ? `0x${val.toString(16).toUpperCase().padStart(2,"0")}` : regName(val);
+                const opVal = (val, imm) => imm ? `0x${val.toString(16).toUpperCase().padStart(2, "0")}` : regName(val);
 
                 const immStr = `_${imm1 ? 'i' : 'r'}${imm2 ? 'i' : 'r'}`;
 
@@ -341,7 +341,7 @@
                     const condOps = ["JMP", "JNE", "JGE", "JGT", "NOP", "JEQ", "JLT", "JLE"];
                     const op = condOps[subtype] || "???";
                     if (op === "JMP") {
-                        return `${op} 0x${dest.toString(16).toUpperCase().padStart(2,0)}`;
+                        return `${op} 0x${dest.toString(16).toUpperCase().padStart(2, 0)}`;
                     } else if (op === "NOP") {
                         return `${op}`;
                     } else {
@@ -390,7 +390,7 @@
                             else if (fmt === 2) modeComment = "; ALP";
                             else if (fmt === 3) modeComment = "; HEX";
                         }
-                        return `${op} ${op1Str}, 0b${fmt.toString(2).padStart(2,"0")} ${modeComment}`;
+                        return `${op} ${op1Str}, 0b${fmt.toString(2).padStart(2, "0")} ${modeComment}`;
                     } else if (op === "CALL") {
                         return `${op} ${opVal(op1, imm1)}`;
                     } else if (op === "JRE" || op === "HCF") {
@@ -527,7 +527,7 @@
             render();
         }
 
-        function updateDisassembly(currentPC=null) {
+        function updateDisassembly(currentPC = null) {
             const bytes = rawCodeInput.value
                 .trim()
                 .split(/\s+/)
@@ -537,7 +537,7 @@
                 const instr = bytes.slice(i, i + 4);
                 const dis = MiniMachineVM.prototype.disassemble(...instr);
                 const isCurrent = currentPC !== null && (i / 4) === currentPC;
-                html += `<span class="dis-line${isCurrent ? ' current-pc' : ''}" style="--line-num: '${line.toString(16).padStart(2,'0').toUpperCase()}'">${dis}</span>\n`;
+                html += `<span class="dis-line${isCurrent ? ' current-pc' : ''}" style="--line-num: '${line.toString(16).padStart(2, '0').toUpperCase()}'">${dis}</span>\n`;
 
             }
             disasmEl.innerHTML = html;
@@ -557,7 +557,7 @@
                 div.textContent = `${n}: ${val}`;
                 registersEl.appendChild(div);
             });
-            updateDisassembly(vm?vm.reg[7]:null);
+            updateDisassembly(vm ? vm.reg[7] : null);
         }
 
         render()
