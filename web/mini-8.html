@@ -11,6 +11,7 @@
             color: #0f0;
             margin: 0;
             padding: 10px;
+            font-size: large;
         }
 
         .top-bar {
@@ -22,11 +23,22 @@
             border-bottom: 1px solid #0f0;
         }
 
+        .current-pc {
+            background: #0f0;
+            color: #111;
+        }
+
+        .current-pc.dis-line::before{
+            color:#111;
+            font-weight: bold;
+        }
+
         .registers {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 10px;
+            font-size: larger;
         }
 
         .register {
@@ -103,9 +115,7 @@
 
 <body>
     <div class="top-bar">
-        <div class="registers" id="registers">
-            <!-- Registers rendered here -->
-        </div>
+
         <div class="controls">
             <button id="playPauseBtn">Play</button>
             <button id="stepBtn">Step</button>
@@ -121,6 +131,10 @@
             <textarea id="rawCodeInput" spellcheck="false"></textarea>
         </div>
         <div class="panel">
+            <h2>Registers</h2>
+            <div class="registers" id="registers">
+            <!-- Registers rendered here -->
+            </div>
             <h2>Disassembly</h2>
             <pre id="disasm"></pre>
         </div>
@@ -327,7 +341,7 @@
                     const condOps = ["JMP", "JNE", "JGE", "JGT", "NOP", "JEQ", "JLT", "JLE"];
                     const op = condOps[subtype] || "???";
                     if (op === "JMP") {
-                        return `${op} 0x${dest.toString(16).toUpperCase()}`;
+                        return `${op} 0x${dest.toString(16).toUpperCase().padStart(2,0)}`;
                     } else if (op === "NOP") {
                         return `${op}`;
                     } else {
@@ -348,8 +362,10 @@
                     } else if (op === "WRT") {
                         const fmt = op2 & 0x3;
                         let op1Str;
+                        let modeComment = "";
                         if (imm1) {
                             if (fmt === 0) { // ASC
+                                modeComment = "; ASC";
                                 if (op1 === 0) {
                                     op1Str = '0x00';
                                 } else if (op1 < 32 || op1 > 126 || op1 === 34 || op1 === 44) {
@@ -358,16 +374,23 @@
                                     op1Str = `"${String.fromCharCode(op1)}"`;
                                 }
                             } else if (fmt === 1) { // DEC
+                                modeComment = "; DEC";
                                 op1Str = op1.toString(10);
                             } else if (fmt === 2) { // ALP
+                                modeComment = "; ALP";
                                 op1Str = op1.toString(10);
                             } else if (fmt === 3) { // HEX
+                                modeComment = "; HEX";
                                 op1Str = `0x${op1.toString(16).toUpperCase().padStart(2, "0")}`;
                             }
                         } else {
                             op1Str = regName(op1);
+                            if (fmt === 0) modeComment = "; ASC";
+                            else if (fmt === 1) modeComment = "; DEC";
+                            else if (fmt === 2) modeComment = "; ALP";
+                            else if (fmt === 3) modeComment = "; HEX";
                         }
-                        return `${op} ${op1Str}, 0b${fmt.toString(2).padStart(2,"0")}`;
+                        return `${op} ${op1Str}, 0b${fmt.toString(2).padStart(2,"0")} ${modeComment}`;
                     } else if (op === "CALL") {
                         return `${op} ${opVal(op1, imm1)}`;
                     } else if (op === "JRE" || op === "HCF") {
@@ -430,7 +453,7 @@
                     .join(' ');
                 rawCodeInput.value = text;
                 vm = null;
-                updateDisassembly();
+                updateDisassembly(0);
             };
             reader.readAsArrayBuffer(file);
         });
@@ -442,7 +465,7 @@
 
         rawCodeInput.addEventListener('input', () => {
             vm = null; // Reset VM when code changes
-            updateDisassembly();
+            updateDisassembly(0);
         });
         rawCodeInput.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -469,7 +492,7 @@
                     .join(' ');
                 rawCodeInput.value = text;
                 vm = null;
-                updateDisassembly();
+                updateDisassembly(0);
             };
             reader.readAsArrayBuffer(file);
         });
@@ -492,7 +515,7 @@
             }
             rawCodeInput.value = lines.join('\n');
             vm = null;
-            updateDisassembly();
+            updateDisassembly(0);
         });
 
         function loadVMFromRaw() {
@@ -504,7 +527,7 @@
             render();
         }
 
-        function updateDisassembly() {
+        function updateDisassembly(currentPC=null) {
             const bytes = rawCodeInput.value
                 .trim()
                 .split(/\s+/)
@@ -513,7 +536,8 @@
             for (let i = 0, line = 1; i + 3 < bytes.length; i += 4, line++) {
                 const instr = bytes.slice(i, i + 4);
                 const dis = MiniMachineVM.prototype.disassemble(...instr);
-                html += `<span class="dis-line" style="--line-num: '${line.toString(16).padStart(2,'0').toUpperCase()}'">${dis}</span>\n`;
+                const isCurrent = currentPC !== null && (i / 4) === currentPC;
+                html += `<span class="dis-line${isCurrent ? ' current-pc' : ''}" style="--line-num: '${line.toString(16).padStart(2,'0').toUpperCase()}'">${dis}</span>\n`;
 
             }
             disasmEl.innerHTML = html;
@@ -533,7 +557,7 @@
                 div.textContent = `${n}: ${val}`;
                 registersEl.appendChild(div);
             });
-            updateDisassembly();
+            updateDisassembly(vm?vm.reg[7]:null);
         }
 
         render()
