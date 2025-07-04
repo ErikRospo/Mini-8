@@ -346,10 +346,28 @@
                     } else if (op === "POP") {
                         return `${op} ${regName(dest)}`;
                     } else if (op === "WRT") {
-                        const fmtNames = ["ASC", "DEC", "ALP", "HEX"];
                         const fmt = op2 & 0x3;
-                        const fmtStr = fmtNames[fmt] || fmt.toString();
-                        return `${op} ${opVal(op1, imm1)}, 0b${fmt.toString(2)}`;
+                        let op1Str;
+                        if (imm1) {
+                            if (fmt === 0) { // ASC
+                                if (op1 === 0) {
+                                    op1Str = '0x00';
+                                } else if (op1 < 32 || op1 > 126 || op1 === 34 || op1 === 44) {
+                                    op1Str = `0x${op1.toString(16).toUpperCase().padStart(2, "0")}`;
+                                } else {
+                                    op1Str = `"${String.fromCharCode(op1)}"`;
+                                }
+                            } else if (fmt === 1) { // DEC
+                                op1Str = op1.toString(10);
+                            } else if (fmt === 2) { // ALP
+                                op1Str = op1.toString(10);
+                            } else if (fmt === 3) { // HEX
+                                op1Str = `0x${op1.toString(16).toUpperCase().padStart(2, "0")}`;
+                            }
+                        } else {
+                            op1Str = regName(op1);
+                        }
+                        return `${op} ${op1Str}, 0b${fmt.toString(2).padStart(2,"0")}`;
                     } else if (op === "CALL") {
                         return `${op} ${opVal(op1, imm1)}`;
                     } else if (op === "JRE" || op === "HCF") {
