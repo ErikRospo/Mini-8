@@ -159,12 +159,12 @@ define RET:
 end
 
 define LOAD(addr_reg, dest):
-    MOV addr_reg, RAMVAL
+    MOV addr_reg, RAMADDR
     MOV RAMDATA, dest
 end
 
 define STORE(src, addr_reg):
-    MOV addr_reg, RAMVAL
+    MOV addr_reg, RAMADDR
     MOV src, RAMDATA
 end
 
