@@ -122,7 +122,7 @@
             <input type="file" id="fileInput" style="display:none" accept=".bin,.mi8" />
             <button id="loadBtn">Load File</button>
             <button id="formatBtn">Format</button>
-            <button id="documentation" >Documentation/ISA</button>
+            <button id="documentation">Documentation/ISA</button>
         </div>
     </div>
 
@@ -415,8 +415,8 @@
         const rawCodeInput = document.getElementById('rawCodeInput');
         const disasmEl = document.getElementById('disasm');
         const registersEl = document.getElementById('registers');
-        const documentationButton=document.getElementById("documentation")
-        documentationButton.addEventListener("click",()=>{
+        const documentationButton = document.getElementById("documentation")
+        documentationButton.addEventListener("click", () => {
             window.open("/ISA.html")
         })
         playPauseBtn.addEventListener('click', () => {
