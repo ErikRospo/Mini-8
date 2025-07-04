@@ -8,7 +8,7 @@
 Opcode is a 1 byte value, with the following structure:
 
 * Bit 7 (MSB): Reserved 
-* Bits 6-5: Immediate mode for operands 1 and 2, respectively. If set, operands are immediate, otherwise, they point to a [register](#Register)  
+* Bits 6-5: Immediate mode for operands 1 and 2, respectively. If set, operands are immediate, otherwise, they point to a [register](#registers)  
 * Bits 4-3:  operator class/type:  
    - `00`: `ALU`/Arethmetic operations  
    - `01`: `COND`/Conditionals (Jumps)    
