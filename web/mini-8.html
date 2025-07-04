@@ -119,13 +119,27 @@
 
 
         #output {
+            min-height: 100px;
+        }
+
+        #ram {
+            min-height: 90px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            flex: 1;
+        }
+
+        #stack {
+            min-height: 100px;
+        }
+
+        .txtbx {
             background: #000;
             color: #0f0;
             border: 1px solid #0f0;
             padding: 10px;
             font-family: monospace;
             white-space: pre;
-            min-height: 100px;
             overflow-y: auto;
             outline: none;
         }
@@ -186,9 +200,10 @@
             pointer-events: none;
             user-select: none;
         }
-        .register.flash{
-            color:#000;
-            background-color:#0f0;
+
+        .register.flash {
+            color: #000;
+            background-color: #0f0;
         }
     </style>
 </head>
@@ -217,7 +232,11 @@
             <h2>Raw Code</h2>
             <textarea id="rawCodeInput" spellcheck="false"></textarea>
             <h2>Output</h2>
-            <div id="output"></div>
+            <div id="output" class="txtbx"></div>
+            <h2>RAM</h2>
+            <div id="ram" class="txtbx"></div>
+            <h2>Stack</h2>
+            <div id="stack" class="txtbx"></div>
 
         </div>
         <div class="panel">
@@ -692,6 +711,9 @@
         const speedInput = document.getElementById("vmSpeed")
 
         const outputEl = document.getElementById("output")
+        const RAMEl = document.getElementById("ram")
+        const stackEl = document.getElementById("stack")
+
         render()
         function printOutput(output) {
             if (output === "\x00") {
@@ -883,6 +905,16 @@
 
                 registersEl.appendChild(div);
             });
+            // Function to convert a number to a 2-digit hex string
+            function toHex(byte) {
+                return byte.toString(16).toUpperCase().padStart(2, '0');
+            }
+
+            // Update RAMEl with hex pairs from vm.ram
+            RAMEl.innerText = vm ? vm.ram.map(toHex).join(' ') : "";
+
+            // Update stackEl with hex pairs from vm.stack
+            stackEl.innerText = vm ? vm.stack.map(toHex).join(' ') : "";
 
             updateDisassembly(vm ? vm.reg[7] : null);
         }
