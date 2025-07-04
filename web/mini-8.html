@@ -94,6 +94,7 @@
         button:disabled {
             opacity: 0.5;
         }
+
         #output {
             background: #000;
             color: #0f0;
@@ -140,6 +141,7 @@
             color: #111;
             font-weight: bold;
         }
+
         .disasm-editor .current-pc.dis-line::before {
             color: #000;
             font-weight: bold;
@@ -425,7 +427,7 @@
                                 modeComment = "; ASC";
                                 if (op1 === 0) {
                                     op1Str = '0x00';
-                                } else if (op1 < 32 || op1 > 126 || op1 === 34 || op1 === 44 || op1===32) {
+                                } else if (op1 < 32 || op1 > 126 || op1 === 34 || op1 === 44 || op1 === 32) {
                                     op1Str = `0x${op1.toString(16).toUpperCase().padStart(2, "0")}`;
                                 } else {
                                     op1Str = `"${String.fromCharCode(op1)}"`;
@@ -631,8 +633,8 @@
 
             // --- Resolve labels ---
             for (const [idx, argIdx, label] of unresolved) {
-                if (!("$"+label in labels)) throw new Error("Undefined label: " + label);
-                output[idx][argIdx + 1] = labels["$"+label] & 0xFF;
+                if (!("$" + label in labels)) throw new Error("Undefined label: " + label);
+                output[idx][argIdx + 1] = labels["$" + label] & 0xFF;
             }
 
             // --- Emit ---
@@ -648,20 +650,20 @@
         const playPauseBtn = document.getElementById('playPauseBtn');
         const stepBtn = document.getElementById('stepBtn');
         const assembleBtn = document.getElementById('assembleBtn');
-        
+
         const rawCodeInput = document.getElementById('rawCodeInput');
         const disasmEl = document.getElementById('disasm');
 
         const registersEl = document.getElementById('registers');
         const documentationButton = document.getElementById("documentation")
-        
-        const outputEl=document.getElementById("output")
-        function printOutput(output){
-            if (output==="\x00"){
-                outputEl.innerText=""
+
+        const outputEl = document.getElementById("output")
+        function printOutput(output) {
+            if (output === "\x00") {
+                outputEl.innerText = ""
             }
-            else{
-                outputEl+=output
+            else {
+                outputEl += output
             }
         }
         documentationButton.addEventListener("click", () => {
@@ -691,7 +693,7 @@
         loadBtn.addEventListener('click', () => {
             fileInput.click();
         });
-        assembleBtn.addEventListener("click",()=>{
+        assembleBtn.addEventListener("click", () => {
             assemble()
         })
 
