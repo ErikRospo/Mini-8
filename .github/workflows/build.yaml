@@ -22,7 +22,7 @@ jobs:
           cache: true
           mise_toml: |
             [tools]
-            pandoc=latest
+            pandoc = "latest"
       - run: rm _site/.gitkeep
       - run: pandoc ISA.md --from gfm -o _site/ISA.html -s --include-in-header=./web/table-style.html
       - run: cp ./web/mini-8.html _site/mini-8.html
