@@ -309,7 +309,7 @@
                 const subtype = opcode & 0x7;
 
                 const regName = idx => `r${idx & 0x7}`;
-                const opVal = (val, imm) => imm ? `0x${val.toString(16).toUpperCase()}` : regName(val);
+                const opVal = (val, imm) => imm ? `0x${val.toString(16).toUpperCase().padStart(2,"0")}` : regName(val);
 
                 const immStr = `_${imm1 ? 'i' : 'r'}${imm2 ? 'i' : 'r'}`;
 
