@@ -13,6 +13,11 @@
   <h1>MiniMachineVM</h1>
   <input type="file" id="fileInput" />
   <button onclick="runVM()">Run</button>
+  <label>
+    <input type="checkbox" id="stepMode" />
+        Debug mode
+    </label>
+    <button id="stepBtn" onclick="stepVM()" disabled>Step</button>
   <pre id="output"></pre>
 
   <script>
@@ -28,6 +33,9 @@
         printOutput("Program loaded. Ready to run.\n");
       };
       reader.readAsArrayBuffer(file);
+    });
+    document.getElementById("stepMode").addEventListener("change", function (event) {
+        document.getElementById("stepBtn").disabled = !event.target.checked;
     });
 
     function printOutput(str) {
@@ -46,10 +54,24 @@
       }
 
       const vm = new MiniMachineVM(programBytes);
-      clearOutput();
-      vm.run();
+        clearOutput();
+        if (document.getElementById("stepMode").checked) {
+            printOutput("Debug mode enabled. Click 'Step' to execute instructions.\n");
+            document.getElementById("stepBtn").disabled = false;
+        } else {
+            vm.run();
+        }
     }
-
+    function stepVM() {
+        if (!vm || vm.halted) {
+        printOutput("\n[Program Halted]\n");
+        return;
+        }
+        vm.step();
+        if (vm.halted) {
+        printOutput("\n[Program Halted]\n");
+        }
+    }
     class MiniMachineVM {
       constructor(program) {
         this.reg = new Array(8).fill(0); // r0-r7
@@ -202,14 +224,24 @@
         }
       }
 
-      run() {
+        run() {
         while (!this.halted) {
-          const instr = this.fetch();
-          if (!instr) break;
-          this.execute(instr);
+            const instr = this.fetch();
+            if (!instr) break;
+            this.execute(instr);
         }
         printOutput("\n[Program Halted]\n");
-      }
+        }
+
+        step() {
+        if (this.halted) return;
+        const instr = this.fetch();
+        if (!instr) {
+            this.halted = true;
+            return;
+        }
+        this.execute(instr);
+        }
     }
   </script>
 </body>
