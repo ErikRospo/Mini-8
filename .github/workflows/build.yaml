@@ -24,7 +24,7 @@ jobs:
             [tools]
             pandoc = "latest"
       - run: rm _site/.gitkeep
-      - run: pandoc ISA.md --from gfm -o _site/ISA.html -s --include-in-header=./web/table-style.html
+      - run: pandoc ISA.md --from gfm -o _site/ISA.html -s --template=./web/ISA-template.html
       - run: cp ./web/mini-8.html _site/mini-8.html
       - run: cp ./web/index.html _site/index.html
       - name: Upload artifact
