@@ -186,6 +186,10 @@
             pointer-events: none;
             user-select: none;
         }
+        .register.flash{
+            color:#000;
+            background-color:#0f0;
+        }
     </style>
 </head>
 
@@ -673,6 +677,8 @@
     <script>
         let interval = null;
         let vm = null;
+        // Keep track of previous register values
+        const previousRegs = {};
 
         const playPauseBtn = document.getElementById('playPauseBtn');
         const stepBtn = document.getElementById('stepBtn');
@@ -692,7 +698,7 @@
                 outputEl.innerText = ""
             }
             else {
-                outputEl += output
+                outputEl.innerText += output
             }
         }
         documentationButton.addEventListener("click", () => {
@@ -853,22 +859,34 @@
 
         }
 
+
         function render() {
-            // Registers
             const names = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'PC'];
             registersEl.innerHTML = '';
+
             names.forEach((n, i) => {
-                if (n == 'r6') {
-                    return
-                }
+                if (n === 'r6') return;
+
                 const val = vm ? vm.reg[i].toString(16).padStart(2, '0') : '00';
                 const div = document.createElement('div');
                 div.className = 'register';
-                div.textContent = `${n}: ${val}`;
+                div.textContent = `${n}: 0x${val}`;
+
+                // Compare to previous value and flash if changed
+                if (previousRegs[n] !== val) {
+                    div.classList.add('flash');
+                    setTimeout(() => div.classList.remove('flash'), 300); // adjust duration as needed
+                }
+
+                // Update stored value
+                previousRegs[n] = val;
+
                 registersEl.appendChild(div);
             });
+
             updateDisassembly(vm ? vm.reg[7] : null);
         }
+
 
         render()
 
