@@ -1,249 +1,252 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>MiniMachineVM</title>
-  <style>
-    body {
-      font-family: monospace;
-      background: #111;
-      color: #0f0;
-      margin: 0;
-      padding: 10px;
-    }
+    <meta charset="UTF-8" />
+    <title>MiniMachineVM</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #111;
+            color: #0f0;
+            margin: 0;
+            padding: 10px;
+        }
 
-    .top-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #0f0;
-    }
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #0f0;
+        }
 
-    .registers {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+        .registers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
 
-    .register {
-      min-width: 60px;
-    }
+        .register {
+            min-width: 60px;
+        }
 
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-    .panel-container {
-      display: flex;
-      gap: 20px;
-      margin-top: 20px;
-    }
+        .panel-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
 
-    .panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
 
-    textarea {
-      background: #000;
-      color: #0f0;
-      padding: 10px;
-      border: 1px solid #0f0;
-      resize: vertical;
-      min-height: 300px;
-      font-family: monospace;
-    }
+        textarea {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border: 1px solid #0f0;
+            resize: vertical;
+            min-height: 300px;
+            font-family: monospace;
+        }
 
-    pre {
-      background: #000;
-      padding: 10px;
-      border: 1px solid #0f0;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      flex: 1;
-    }
+        pre {
+            background: #000;
+            padding: 10px;
+            border: 1px solid #0f0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            flex: 1;
+        }
 
-    button, input[type="checkbox"] {
-      background: #222;
-      color: #0f0;
-      border: 1px solid #0f0;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
+        button,
+        input[type="checkbox"] {
+            background: #222;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
 
-    button:disabled {
-      opacity: 0.5;
-    }
-  </style>
+        button:disabled {
+            opacity: 0.5;
+        }
+    </style>
 </head>
+
 <body>
-  <div class="top-bar">
-    <div class="registers" id="registers">
-      <!-- Registers rendered here -->
+    <div class="top-bar">
+        <div class="registers" id="registers">
+            <!-- Registers rendered here -->
+        </div>
+        <div class="controls">
+            <button id="playPauseBtn">Play</button>
+            <button id="stepBtn">Step</button>
+            <input type="file" id="fileInput" style="display:none" accept=".bin,.mi8" />
+            <button id="loadBtn">Load File</button>
+        </div>
     </div>
-    <div class="controls">
-      <button id="playPauseBtn">Play</button>
-      <button id="stepBtn">Step</button>
-        <input type="file" id="fileInput" style="display:none" accept=".bin,.mi8"/>
-  <button id="loadBtn">Load File</button>
+
+    <div class="panel-container">
+        <div class="panel">
+            <h2>Raw Code</h2>
+            <textarea id="rawCodeInput" spellcheck="false"></textarea>
+        </div>
+        <div class="panel">
+            <h2>Disassembly</h2>
+            <pre id="disasm"></pre>
+        </div>
     </div>
-  </div>
 
-  <div class="panel-container">
-    <div class="panel">
-      <h2>Raw Code</h2>
-      <textarea id="rawCodeInput" spellcheck="false"></textarea>
-    </div>
-    <div class="panel">
-      <h2>Disassembly</h2>
-      <pre id="disasm"></pre>
-    </div>
-  </div>
+    <script>
+        let interval = null;
+        let vm = null;
 
-  <script>
-    let interval = null;
-    let vm = null;
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        const rawCodeInput = document.getElementById('rawCodeInput');
+        const disasmEl = document.getElementById('disasm');
+        const registersEl = document.getElementById('registers');
 
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const stepBtn = document.getElementById('stepBtn');
-    const rawCodeInput = document.getElementById('rawCodeInput');
-    const disasmEl = document.getElementById('disasm');
-    const registersEl = document.getElementById('registers');
+        playPauseBtn.addEventListener('click', () => {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+                playPauseBtn.textContent = 'Play';
+            } else {
+                if (!vm) loadVMFromRaw();
+                interval = setInterval(() => {
+                    vm.step();
+                    render();
+                    if (vm.halted) {
+                        clearInterval(interval);
+                        playPauseBtn.textContent = 'Play';
+                    }
+                }, 1000);
+                playPauseBtn.textContent = 'Pause';
+            }
+        });
+        const fileInput = document.getElementById('fileInput');
+        const loadBtn = document.getElementById('loadBtn');
 
-    playPauseBtn.addEventListener('click', () => {
-      if (interval) {
-        clearInterval(interval);
-        interval = null;
-        playPauseBtn.textContent = 'Play';
-      } else {
-        if (!vm) loadVMFromRaw();
-        interval = setInterval(() => {
-          vm.step();
-          render();
-          if (vm.halted) {
-            clearInterval(interval);
-            playPauseBtn.textContent = 'Play';
-          }
-        }, 1000);
-        playPauseBtn.textContent = 'Pause';
-      }
-    });
-    const fileInput = document.getElementById('fileInput');
-    const loadBtn = document.getElementById('loadBtn');
+        loadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
 
-    loadBtn.addEventListener('click', () => {
-    fileInput.click();
-    });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                let text = evt.target.result;
+                // Detect if this is a hex dump (mostly hex digits and whitespace, few non-printables)
+                const hexLike = /^[\s0-9a-fA-F]+$/m.test(text) && (text.match(/[0-9a-fA-F]/g) || []).length > 8;
+                if (hexLike) {
+                    // Normalize: replace all non-hex chars with spaces, then collapse spaces
+                    text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
+                } else {
+                    // Interpret as raw text: convert each char to two-digit hex
+                    text = Array.from(text)
+                        .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+                        .join(' ');
+                }
+                rawCodeInput.value = text;
+                vm = null;
+                updateDisassembly();
+            };
+            reader.readAsText(file);
+        });
+        stepBtn.addEventListener('click', () => {
+            if (!vm) loadVMFromRaw();
+            vm.step();
+            render();
+        });
 
-    fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        let text = evt.target.result;
-        // Detect if this is a hex dump (mostly hex digits and whitespace, few non-printables)
-        const hexLike = /^[\s0-9a-fA-F]+$/m.test(text) && (text.match(/[0-9a-fA-F]/g) || []).length > 8;
-        if (hexLike) {
-            // Normalize: replace all non-hex chars with spaces, then collapse spaces
-            text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
-        } else {
-            // Interpret as raw text: convert each char to two-digit hex
-            text = Array.from(text)
-            .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
-            .join(' ');
+        rawCodeInput.addEventListener('input', () => {
+            vm = null; // Reset VM when code changes
+            updateDisassembly();
+        });
+        rawCodeInput.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            rawCodeInput.style.background = '#222'; // Visual feedback
+        });
+
+        rawCodeInput.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            rawCodeInput.style.background = '#000';
+        });
+
+        rawCodeInput.addEventListener('drop', (e) => {
+            e.preventDefault();
+            rawCodeInput.style.background = '#000';
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                let text = evt.target.result;
+                // Normalize: replace all non-hex chars with spaces, then collapse spaces
+                text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
+                rawCodeInput.value = text;
+                vm = null;
+                updateDisassembly();
+            };
+            reader.readAsText(file);
+        });
+
+        function loadVMFromRaw() {
+            const bytes = rawCodeInput.value
+                .trim()
+                .split(/\s+/)
+                .map(b => parseInt(b, 16) || 0);
+            vm = new MiniMachineVM(new Uint8Array(bytes));
+            render();
         }
-        rawCodeInput.value = text;
-        vm = null;
-        updateDisassembly();
-    };
-    reader.readAsText(file);
-    });
-    stepBtn.addEventListener('click', () => {
-      if (!vm) loadVMFromRaw();
-      vm.step();
-      render();
-    });
 
-    rawCodeInput.addEventListener('input', () => {
-      vm = null; // Reset VM when code changes
-      updateDisassembly();
-    });
-    rawCodeInput.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        rawCodeInput.style.background = '#222'; // Visual feedback
-    });
-
-    rawCodeInput.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    rawCodeInput.style.background = '#000';
-    });
-
-    rawCodeInput.addEventListener('drop', (e) => {
-    e.preventDefault();
-    rawCodeInput.style.background = '#000';
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        let text = evt.target.result;
-        // Normalize: replace all non-hex chars with spaces, then collapse spaces
-        text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
-        rawCodeInput.value = text;
-        vm = null;
-        updateDisassembly();
-    };
-    reader.readAsText(file);
-    });
-
-    function loadVMFromRaw() {
-      const bytes = rawCodeInput.value
-        .trim()
-        .split(/\s+/)
-        .map(b => parseInt(b, 16) || 0);
-      vm = new MiniMachineVM(new Uint8Array(bytes));
-      render();
-    }
-
-    function updateDisassembly() {
-      const bytes = rawCodeInput.value
-        .trim()
-        .split(/\s+/)
-        .map(b => parseInt(b, 16) || 0);
-      const disassembly = [];
-      for (let i = 0; i < bytes.length; i += 4) {
-        if (i + 3 >= bytes.length) break;
-        const instr = bytes.slice(i, i + 4);
-        const dis = MiniMachineVM.prototype.disassemble(...instr);
-        disassembly.push(dis);
-      }
-      disasmEl.textContent = disassembly.join('\n');
-    }
-
-    function render() {
-      // Registers
-      const names = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'PC'];
-      registersEl.innerHTML = '';
-      names.forEach((n, i) => {
-        if (n=='r6'){
-            return
+        function updateDisassembly() {
+            const bytes = rawCodeInput.value
+                .trim()
+                .split(/\s+/)
+                .map(b => parseInt(b, 16) || 0);
+            const disassembly = [];
+            for (let i = 0; i < bytes.length; i += 4) {
+                if (i + 3 >= bytes.length) break;
+                const instr = bytes.slice(i, i + 4);
+                const dis = MiniMachineVM.prototype.disassemble(...instr);
+                disassembly.push(dis);
+            }
+            disasmEl.textContent = disassembly.join('\n');
         }
-        const val = vm ? vm.reg[i].toString(16).padStart(2, '0') : '00';
-        const div = document.createElement('div');
-        div.className = 'register';
-        div.textContent = `${n}: ${val}`;
-        registersEl.appendChild(div);
-      });
-      updateDisassembly();
-    }
 
-    render()
-            class MiniMachineVM {
+        function render() {
+            // Registers
+            const names = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'PC'];
+            registersEl.innerHTML = '';
+            names.forEach((n, i) => {
+                if (n == 'r6') {
+                    return
+                }
+                const val = vm ? vm.reg[i].toString(16).padStart(2, '0') : '00';
+                const div = document.createElement('div');
+                div.className = 'register';
+                div.textContent = `${n}: ${val}`;
+                registersEl.appendChild(div);
+            });
+            updateDisassembly();
+        }
+
+        render()
+        class MiniMachineVM {
             constructor(program) {
                 this.reg = new Array(8).fill(0); // r0-r7
                 this.ram = new Array(256).fill(0);
@@ -480,6 +483,7 @@
             }
 
         }
-  </script>
+    </script>
 </body>
+
 </html>
