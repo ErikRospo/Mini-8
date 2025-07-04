@@ -21,30 +21,30 @@ Opcode is a 1 byte value, with the following structure:
 
 | `OPT`  | `VAL` | `Result`         | `NAME`  | `FULL OPC`    | `OP1` | `OP2` | `DEST` |
 |--------|-------|------------------|---------|---------------|-------|-------|--------|
-| `ALU`  | `000` | `OP1 & OP2`      | `AND`   | 0XX00000`    | Yes   | Yes   | Yes    |
-| `ALU`  | `001` | `OP1 ROR OP2`    | `ROR`   | 0XX00100`    | Yes   | Yes   | Yes    |
-| `ALU`  | `010` | `OP1 + OP2`      | `ADD`   | 0XX00010`    | Yes   | Yes   | Yes    |
-| `ALU`  | `011` | `OP1 ^ OP2`      | `XOR`   | 0XX00011`    | Yes   | Yes   | Yes    |
-| `ALU`  | `100` | `OP1 \| OP2`     | `OR`    | 0XX00001`    | Yes   | Yes   | Yes    |
-| `ALU`  | `101` | `OP1 ROL OP2`    | `ROL`   | 0XX00101`    | Yes   | Yes   | Yes    |
-| `ALU`  | `110` | `OP1 - OP2`      | `SUB`   | 0XX00110`    | Yes   | Yes   | Yes    |
-| `ALU`  | `111` | `!OP1`           | `NOT`   | 0XX00111` (ignores OP2) | Yes   | No    | Yes    |
-| `COND` | `000` | Always           | `JMP`   | 0XX01000` (unconditional jump) | No    | No    | Yes    |
-| `COND` | `001` | `OP1 != OP2`     | `JNE`   | 0XX01001`    | Yes   | Yes   | Yes    |
-| `COND` | `010` | `OP1 >= OP2`     | `JGE`   | 0XX01010` *  | Yes   | Yes   | Yes    |
-| `COND` | `011` | `OP1 > OP2`      | `JGT`   | 0XX01011` *  | Yes   | Yes   | Yes    |
-| `COND` | `100` | Never            | `NOP`   | 0XX01100` (never jumping is a no-op) | No    | No    | No     |
-| `COND` | `101` | `OP1 == OP2`     | `JEQ`   | 0XX01101`    | Yes   | Yes   | Yes    |
-| `COND` | `110` | `OP1 < OP2`      | `JLT`   | 0XX01110` *  | Yes   | Yes   | Yes    |
-| `COND` | `111` | `OP1 <= OP2`     | `JLE`   | 0XX01111` *  | Yes   | Yes   | Yes    |
-| `IO`   | `000` | `DEST=OP1`        | `MOV`   | 0X010000`    | Yes   | No    | Yes    |
-| `IO`   | `001` | Swap OP1<->DEST   | `SWAP`  | 00X10001`    | Yes   | No    | Yes    |
-| `IO`   | `010` | Push OP1 onto stack | `PUSH` | 0XX10010`    | Yes   | No    | No     |
-| `IO`   | `011` | Pop stack into out | `POP`  | 0XX10011`    | No    | No    | Yes    |
-| `IO`   | `100` | Write OP1 to TERM | `WRT`  | 0XX10100` (See [WRT](#WRT)) | Yes   | Yes   | No     |
-| `IO`   | `101` | Call              | `CALL` | 0XX10101`    | Yes   | No    | No     |
-| `IO`   | `110` | Jump Relative     | `JRE`  | 0XX10110`    | No    | No    | No     |
-| `IO`   | `111` | Halt              | `HCF`  | 0XX10111`    | No    | No    | No     |
+| `ALU`  | `000` | `OP1 & OP2`      | `AND`   | `0XX00000`    | Yes   | Yes   | Yes    |
+| `ALU`  | `001` | `OP1 ROR OP2`    | `ROR`   | `0XX00100`    | Yes   | Yes   | Yes    |
+| `ALU`  | `010` | `OP1 + OP2`      | `ADD`   | `0XX00010`    | Yes   | Yes   | Yes    |
+| `ALU`  | `011` | `OP1 ^ OP2`      | `XOR`   | `0XX00011`    | Yes   | Yes   | Yes    |
+| `ALU`  | `100` | `OP1 \| OP2`     | `OR`    | `0XX00001`    | Yes   | Yes   | Yes    |
+| `ALU`  | `101` | `OP1 ROL OP2`    | `ROL`   | `0XX00101`    | Yes   | Yes   | Yes    |
+| `ALU`  | `110` | `OP1 - OP2`      | `SUB`   | `0XX00110`    | Yes   | Yes   | Yes    |
+| `ALU`  | `111` | `!OP1`           | `NOT`   | `0XX00111` (ignores OP2) | Yes   | No    | Yes    |
+| `COND` | `000` | Always           | `JMP`   | `0XX01000` (unconditional jump) | No    | No    | Yes    |
+| `COND` | `001` | `OP1 != OP2`     | `JNE`   | `0XX01001`    | Yes   | Yes   | Yes    |
+| `COND` | `010` | `OP1 >= OP2`     | `JGE`   | `0XX01010` *  | Yes   | Yes   | Yes    |
+| `COND` | `011` | `OP1 > OP2`      | `JGT`   | `0XX01011` *  | Yes   | Yes   | Yes    |
+| `COND` | `100` | Never            | `NOP`   | `0XX01100` (never jumping is a no-op) | No    | No    | No     |
+| `COND` | `101` | `OP1 == OP2`     | `JEQ`   | `0XX01101`    | Yes   | Yes   | Yes    |
+| `COND` | `110` | `OP1 < OP2`      | `JLT`   | `0XX01110` *  | Yes   | Yes   | Yes    |
+| `COND` | `111` | `OP1 <= OP2`     | `JLE`   | `0XX01111` *  | Yes   | Yes   | Yes    |
+| `IO`   | `000` | `DEST=OP1`        | `MOV`   | `0X010000`    | Yes   | No    | Yes    |
+| `IO`   | `001` | Swap OP1<->DEST   | `SWAP`  | `00X10001`    | Yes   | No    | Yes    |
+| `IO`   | `010` | Push OP1 onto stack | `PUSH` | `0XX10010`    | Yes   | No    | No     |
+| `IO`   | `011` | Pop stack into out | `POP`  | `0XX10011`    | No    | No    | Yes    |
+| `IO`   | `100` | Write OP1 to TERM | `WRT`  | `0XX10100` (See [WRT](#wrt)) | Yes   | Yes   | No     |
+| `IO`   | `101` | Call              | `CALL` | `0XX10101`    | Yes   | No    | No     |
+| `IO`   | `110` | Jump Relative     | `JRE`  | `0XX10110`    | No    | No    | No     |
+| `IO`   | `111` | Halt              | `HCF`  | `0XX10111`    | No    | No    | No     |
 
 `RET` can be implemented by macros by `POP`ing the stack into the PC register, `r7`.
 
@@ -70,8 +70,9 @@ The only times `OP1` is ignored are in the `NOP` and `HCF` instructions, which a
 ####  WRT
 The `WRT` instruction writes the value in OP1 to the terminal.
 OP2 specifies the format to use for the output, and is a 2-bit value:
+
 | Format      | OP2 Value | Description                                                                 | Max Supported Value |
-|-------------|-----------|-----------------------------------------------------------------------------|--------------------|
+|:------------|:----------|-----------------------------------------------------------------------------|--------------------|
 | ASCII       | `00`      | ASCII character output (default)                                            | `0x7F` (DEL)       |
 | Decimal     | `01`      | Unsigned decimal output (e.g. `0x00` is `0`, `0x09` is `9`)               | `0x09` (9)       |
 | Alphabetic  | `10`      | Alphabetic output, indexed by OP1 (`0` is `A`, `1` is `B`, ..., `25` is `Z`)| `0x19` (25, `Z`)   |
@@ -221,9 +222,9 @@ This is intentionally designed to be flexible, but it is powerful and should be 
 ## Example Instructions
 
 `ADD r0, r1, r2`  
-This instruction adds the values in `r0` and `r1`, and stores the result in `r2`.  
-Binary: `00000010 00000000 00000001 00000010`  
-ADD is an ALU operation (`00` type + `010` subtype) so the opcode is `00000010`, and the operands are `r0`, `r1`, and `r2`, which are `00000000`, `00000001`, and `00000010` respectively.  
+This instruction adds the values in `r0` and `r1`, and stores the result in `r2`.   
+Binary: `00000010 00000000 00000001 00000010`   
+ADD is an ALU operation (`00` type + `010` subtype) so the opcode is `00000010`, and the operands are `r0`, `r1`, and `r2`, which are `00000000`, `00000001`, and `00000010` respectively.   
 
 `AND r0, 0b01010101, r1`  
 This instruction performs a bitwise AND operation between the value in `r0` and the immediate value `0b01010101`, and stores the result in `r1`.  
@@ -231,17 +232,17 @@ Binary: `00100000 01010101 00000000 00000001`
 AND is an ALU operation (`00` type + `001` subtype). As the second operand is an immediate, the opcode is `00100000` with the `2` bit set to indicate an immediate value. The operands are `r0`, `0b01010101`, and `r1`, which are `00000000`, `01010101`, and `00000001` respectively.
 
 `JMP 0x10`  
-This instruction jumps to the absolute address `0x10`.
+This instruction jumps to the absolute address `0x10`.  
 Binary: `01000000 00010000 00000000 00000000`  
-JMP is a conditional operation (`01` type + `000` subtype), so the opcode is `01000000`. The operands are `0x10` (which is an immediate), and the destination is `r0`, which is `00000000`. The first operand is the address to jump to, so it is `00010000`.
+JMP is a conditional operation (`01` type + `000` subtype), so the opcode is `01000000`. The operands are `0x10` (which is an immediate), and the destination is `r0`, which is `00000000`. The first operand is the address to jump to, so it is `00010000`.  
 
 `SUB r0, 0x80, r1`  
 This instruction subtracts the immediate value `0x80` from the value in `r0`, and stores the result in `r1`.  
 Binary: `00100110 00000000 10000000 00000001`  
-SUB is an ALU operation (`00` type + `110` subtype), so the opcode is `00100110`. The operands are `r0`, `0x80`, and `r1`, which are `00000000`, `10000000`, and `00000001` respectively. This will convert the value in `r0` to a signed integer in `r1`.
+SUB is an ALU operation (`00` type + `110` subtype), so the opcode is `00100110`. The operands are `r0`, `0x80`, and `r1`, which are `00000000`, `10000000`, and `00000001` respectively. This will convert the value in `r0` to a signed integer in `r1`.  
 
-0OR r0, 0x55, r0`  
-This instruction performs a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and stores the result back in `r0`. 
-Binary: `00100011 00000000 01010101 00000000`
-XOR is an ALU operation (`00` type + `011` subtype), so the opcode is `00100011`. The operands are `r0`, `0x55`, and `r0`, which are `00000000`, `01010101`, and `00000000` respectively. This will perform a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and store the result back in `r0`.
+`XOR r0, 0x55, r0`  
+This instruction performs a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and stores the result back in `r0`.  
+Binary: `00100011 00000000 01010101 00000000`   
+XOR is an ALU operation (`00` type + `011` subtype), so the opcode is `00100011`. The operands are `r0`, `0x55`, and `r0`, which are `00000000`, `01010101`, and `00000000` respectively. This will perform a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and store the result back in `r0`.  
 
