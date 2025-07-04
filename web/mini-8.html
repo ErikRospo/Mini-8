@@ -88,15 +88,17 @@
       <!-- Registers rendered here -->
     </div>
     <div class="controls">
-      <button id="playPauseBtn">▶️ Play</button>
+      <button id="playPauseBtn">Play</button>
       <button id="stepBtn">Step</button>
+        <input type="file" id="fileInput" style="display:none" accept=".bin,.mi8"/>
+  <button id="loadBtn">Load File</button>
     </div>
   </div>
 
   <div class="panel-container">
     <div class="panel">
-      <h2>Raw Machine Code (hex bytes, space separated)</h2>
-      <textarea id="rawCodeInput" spellcheck="false">00 00 00 00</textarea>
+      <h2>Raw Code</h2>
+      <textarea id="rawCodeInput" spellcheck="false"></textarea>
     </div>
     <div class="panel">
       <h2>Disassembly</h2>
@@ -118,7 +120,7 @@
       if (interval) {
         clearInterval(interval);
         interval = null;
-        playPauseBtn.textContent = '▶️ Play';
+        playPauseBtn.textContent = 'Play';
       } else {
         if (!vm) loadVMFromRaw();
         interval = setInterval(() => {
@@ -126,13 +128,42 @@
           render();
           if (vm.halted) {
             clearInterval(interval);
-            playPauseBtn.textContent = '▶️ Play';
+            playPauseBtn.textContent = 'Play';
           }
         }, 1000);
-        playPauseBtn.textContent = '⏸ Pause';
+        playPauseBtn.textContent = 'Pause';
       }
     });
+    const fileInput = document.getElementById('fileInput');
+    const loadBtn = document.getElementById('loadBtn');
 
+    loadBtn.addEventListener('click', () => {
+    fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        let text = evt.target.result;
+        // Detect if this is a hex dump (mostly hex digits and whitespace, few non-printables)
+        const hexLike = /^[\s0-9a-fA-F]+$/m.test(text) && (text.match(/[0-9a-fA-F]/g) || []).length > 8;
+        if (hexLike) {
+            // Normalize: replace all non-hex chars with spaces, then collapse spaces
+            text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
+        } else {
+            // Interpret as raw text: convert each char to two-digit hex
+            text = Array.from(text)
+            .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+            .join(' ');
+        }
+        rawCodeInput.value = text;
+        vm = null;
+        updateDisassembly();
+    };
+    reader.readAsText(file);
+    });
     stepBtn.addEventListener('click', () => {
       if (!vm) loadVMFromRaw();
       vm.step();
@@ -142,6 +173,32 @@
     rawCodeInput.addEventListener('input', () => {
       vm = null; // Reset VM when code changes
       updateDisassembly();
+    });
+    rawCodeInput.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        rawCodeInput.style.background = '#222'; // Visual feedback
+    });
+
+    rawCodeInput.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    rawCodeInput.style.background = '#000';
+    });
+
+    rawCodeInput.addEventListener('drop', (e) => {
+    e.preventDefault();
+    rawCodeInput.style.background = '#000';
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        let text = evt.target.result;
+        // Normalize: replace all non-hex chars with spaces, then collapse spaces
+        text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
+        rawCodeInput.value = text;
+        vm = null;
+        updateDisassembly();
+    };
+    reader.readAsText(file);
     });
 
     function loadVMFromRaw() {
