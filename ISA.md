@@ -80,6 +80,8 @@ OP2 specifies the format to use for the output, and is a 2-bit value:
 
 Calling `WRT` with an immediate value greater than the maximum supported value for the specified format will result in a `?` being printed for that format.
 
+Both formats Alphabetic and Hexadecimal (`10` and `11`) SHOULD output uppercase letters.
+
 Calling `WRT` in ASCII format with an immediate value of `0x00` will clear the terminal. 
 
 #### Jump Instructions
