@@ -95,6 +95,46 @@
             opacity: 0.5;
         }
 
+        .disasm-editor {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre;
+            min-height: 300px;
+            overflow-y: auto;
+            outline: none;
+        }
+
+        .disasm-editor .dis-line {
+            position: relative;
+            padding-left: 2em;
+            white-space: pre;
+            display: block;
+        }
+
+        .disasm-editor .dis-line::before {
+            content: attr(data-line);
+            position: absolute;
+            left: 0;
+            color: #0f0;
+            opacity: 0.5;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .disasm-editor .current-pc {
+            background-color: #0f0;
+            color: #111;
+            font-weight: bold;
+        }
+        .disasm-editor .current-pc.dis-line::before {
+            color: #000;
+            font-weight: bold;
+        }
+
+
         .dis-line {
             position: relative;
             padding-left: 2em;
@@ -122,6 +162,8 @@
             <input type="file" id="fileInput" style="display:none" accept=".bin,.mi8" />
             <button id="loadBtn">Load File</button>
             <button id="formatBtn">Format</button>
+            <button id="assembleBtn">Assemble</button>
+
             <button id="documentation">Documentation/ISA</button>
         </div>
     </div>
@@ -137,7 +179,7 @@
                 <!-- Registers rendered here -->
             </div>
             <h2>Disassembly</h2>
-            <pre id="disasm"></pre>
+            <div id="disasm" contenteditable="true" class="disasm-editor" spellcheck="false"></div>
         </div>
     </div>
     <script>
@@ -369,7 +411,7 @@
                                 modeComment = "; ASC";
                                 if (op1 === 0) {
                                     op1Str = '0x00';
-                                } else if (op1 < 32 || op1 > 126 || op1 === 34 || op1 === 44) {
+                                } else if (op1 < 32 || op1 > 126 || op1 === 34 || op1 === 44 || op1===32) {
                                     op1Str = `0x${op1.toString(16).toUpperCase().padStart(2, "0")}`;
                                 } else {
                                     op1Str = `"${String.fromCharCode(op1)}"`;
@@ -405,15 +447,197 @@
             }
         }
     </script>
+    <script>
+        const OPCODES = {
+            "AND": ["ALU", 0b000], "ROR": ["ALU", 0b001], "ADD": ["ALU", 0b010], "XOR": ["ALU", 0b011],
+            "OR": ["ALU", 0b100], "ROL": ["ALU", 0b101], "SUB": ["ALU", 0b110], "NOT": ["ALU", 0b111],
+            "JMP": ["COND", 0b000], "JNE": ["COND", 0b001], "JGE": ["COND", 0b010], "JGT": ["COND", 0b011],
+            "NOP": ["COND", 0b100], "JEQ": ["COND", 0b101], "JLT": ["COND", 0b110], "JLE": ["COND", 0b111],
+            "MOV": ["IO", 0b000], "SWAP": ["IO", 0b001], "PUSH": ["IO", 0b010], "POP": ["IO", 0b011],
+            "WRT": ["IO", 0b100], "CALL": ["IO", 0b101], "JRE": ["IO", 0b110], "HCF": ["IO", 0b111],
+        };
 
+        const OPCLASS = { "ALU": 0b00, "COND": 0b01, "IO": 0b10 };
+
+        const REGISTERS = {
+            "r0": 0, "r1": 1, "r2": 2, "r3": 3,
+            "r4": 4, "r5": 5, "r6": 6, "r7": 7,
+            "RAMADDR": 4, "RAMDATA": 5, "PC": 7,
+        };
+
+        function parseValue(val, constants) {
+            val = val.trim();
+            if (val in constants) return constants[val];
+            if (/^['"](.{1})['"]$/.test(val)) return val.charCodeAt(1);
+            if (val.startsWith("0x")) return parseInt(val, 16);
+            if (val.startsWith("0b")) return parseInt(val, 2);
+            if (/^\d+$/.test(val)) return parseInt(val, 10);
+            throw new Error("Unknown value: " + val);
+        }
+
+        function isRegister(val) {
+            return val in REGISTERS;
+        }
+
+        function encodeOpcode(mnemonic, op1, op2) {
+            let [cls, subtype] = OPCODES[mnemonic];
+            let imm1 = op1 && !isRegister(op1) ? 1 : 0;
+            let imm2 = op2 && !isRegister(op2) ? 1 : 0;
+            return (imm1 << 6) | (imm2 << 5) | (OPCLASS[cls] << 3) | subtype;
+        }
+
+        function encodeOperand(val, constants) {
+            if (!val) return 0;
+            return isRegister(val) ? REGISTERS[val] : (parseValue(val, constants) & 0xFF);
+        }
+
+        function handleShorthand(op, args) {
+            args = [...args];
+            if (op === "MOV" && args.length === 2) args.splice(1, 0, "0");
+            else if (op === "HCF") args = ["0", "0", "0"];
+            else if (op === "WRT" && args.length === 1) args.push("0", "0");
+            else if (op === "WRT" && args.length === 2) args.push("0");
+            else if (op === "PUSH" && args.length === 1) args.push("0", "0");
+            else if (op === "POP" && args.length === 1) args = ["0", "0", args[0]];
+            else if (op === "JMP" && args.length === 1) args = ["0", "0", args[0]];
+            else if (op === "CALL" && args.length === 1) args.push("0", "0");
+            return args;
+        }
+
+        function assemble() {
+            const disasmEl = document.getElementById("disasm");
+            const rawCodeInput = document.getElementById("rawCodeInput");
+            const lines = disasmEl.innerText.split("\n");
+            console.log(lines)
+
+            let constants = {}, macros = {}, labels = {}, pc = 0, code = [];
+            let expanded = [], unresolved = [];
+
+            // --- First pass: Constants/Macros ---
+            for (let i = 0; i < lines.length;) {
+                let line = lines[i].split(";")[0].trim();
+                if (!line) { i++; continue; }
+
+                const defineMatch = line.match(/^define\s+(\w+)(\((.*?)\))?(\:)?\s*(.*)?/);
+                if (defineMatch) {
+                    const [_, name, __, argstr, colon, body] = defineMatch;
+                    const macroArgs = argstr ? argstr.split(",").map(s => s.trim()) : [];
+                    if (colon) {
+                        const macroLines = [];
+                        i++;
+                        while (i < lines.length && lines[i].trim() !== "end") {
+                            if (!lines[i].startsWith("define")) macroLines.push(lines[i].split(";")[0].trim());
+                            i++;
+                        }
+                        macros[name.toUpperCase()] = [macroArgs, macroLines];
+                        i++;
+                        continue;
+                    } else {
+                        constants[name] = parseValue(body, constants);
+                        i++;
+                        continue;
+                    }
+                }
+
+                expanded.push(line);
+                pc++;
+                i++;
+            }
+
+            // --- Macro expansion ---
+            function expandMacros(lines, parentArgs = {}) {
+                const result = [];
+                for (let line of lines) {
+                    const tokens = line.trim().split(/[,\s]+/);
+                    const mnemonic = tokens[0].toUpperCase();
+                    if (macros[mnemonic]) {
+                        const [macroArgs, macroBody] = macros[mnemonic];
+                        const actualArgs = tokens.slice(1, 1 + macroArgs.length);
+                        const argMap = Object.fromEntries(macroArgs.map((k, i) => [k, actualArgs[i]]));
+
+                        const substitute = str => {
+                            for (let [k, v] of Object.entries(argMap)) str = str.replaceAll(k, v);
+                            for (let [k, v] of Object.entries(parentArgs)) str = str.replaceAll(k, v);
+                            return str;
+                        };
+
+                        const body = macroBody.map(substitute);
+                        result.push(...expandMacros(body, argMap));
+                    } else {
+                        for (let [k, v] of Object.entries(parentArgs)) line = line.replaceAll(k, v);
+                        result.push(line);
+                    }
+                }
+                return result;
+            }
+
+            expanded = expandMacros(expanded);
+
+            // --- Second pass: Assemble ---
+            pc = 0;
+            const output = [];
+
+            for (let line of expanded) {
+                while (line.match(/^(\w+):\s*(.*)/)) {
+                    const m = line.match(/^(\w+):\s*(.*)/);
+                    if (!m) break;
+                    line = m[2];
+                }
+
+                if (!line.trim()) continue;
+
+                const tokens = line.trim().split(/[,\s]+/);
+                const mnemonic = tokens[0].toUpperCase();
+
+                if (mnemonic === "LABEL") {
+                    const label = tokens[1].replace(/:$/, '');
+                    labels[label] = pc;
+                    constants[label] = pc;
+                    continue;
+                }
+
+                let args = handleShorthand(mnemonic, tokens.slice(1));
+                for (let i = 0; i < 3; i++) {
+                    if (args[i] in labels) args[i] = labels[args[i]].toString();
+                    else if (args[i]?.startsWith("$")) {
+                        unresolved.push([output.length, i, args[i].slice(1)]);
+                        args[i] = "0";
+                    }
+                }
+
+                if (!(mnemonic in OPCODES)) throw new Error("Unknown mnemonic: " + mnemonic);
+                const [op1, op2, dest] = args;
+                const b1 = encodeOpcode(mnemonic, op1, op2);
+                const b2 = encodeOperand(op1, constants);
+                const b3 = encodeOperand(op2, constants);
+                const b4 = encodeOperand(dest, constants);
+                output.push([b1, b2, b3, b4]);
+                pc++;
+            }
+
+            // --- Resolve labels ---
+            for (const [idx, argIdx, label] of unresolved) {
+                if (!("$"+label in labels)) throw new Error("Undefined label: " + label);
+                output[idx][argIdx + 1] = labels["$"+label] & 0xFF;
+            }
+
+            // --- Emit ---
+            const hex = output.flat().map(b => b.toString(16).padStart(2, '0')).join(" ");
+            rawCodeInput.value = hex;
+        }
+
+    </script>
     <script>
         let interval = null;
         let vm = null;
 
         const playPauseBtn = document.getElementById('playPauseBtn');
         const stepBtn = document.getElementById('stepBtn');
+        const assembleBtn = document.getElementById('assembleBtn');
+        
         const rawCodeInput = document.getElementById('rawCodeInput');
         const disasmEl = document.getElementById('disasm');
+
         const registersEl = document.getElementById('registers');
         const documentationButton = document.getElementById("documentation")
         documentationButton.addEventListener("click", () => {
@@ -443,6 +667,9 @@
         loadBtn.addEventListener('click', () => {
             fileInput.click();
         });
+        assembleBtn.addEventListener("click",()=>{
+            assemble()
+        })
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -536,15 +763,22 @@
                 .trim()
                 .split(/\s+/)
                 .map(b => parseInt(b, 16) || 0);
-            let html = '';
+
+            disasmEl.innerHTML = '';
             for (let i = 0, line = 1; i + 3 < bytes.length; i += 4, line++) {
                 const instr = bytes.slice(i, i + 4);
                 const dis = MiniMachineVM.prototype.disassemble(...instr);
                 const isCurrent = currentPC !== null && (i / 4) === currentPC;
-                html += `<span class="dis-line${isCurrent ? ' current-pc' : ''}" style="--line-num: '${line.toString(16).padStart(2, '0').toUpperCase()}'">${dis}</span>\n`;
 
+                const lineEl = document.createElement('div');
+                lineEl.className = 'dis-line';
+                if (isCurrent) lineEl.classList.add('current-pc');
+                lineEl.dataset.line = line.toString(16).padStart(2, '0').toUpperCase();
+                lineEl.textContent = dis;
+
+                disasmEl.appendChild(lineEl);
             }
-            disasmEl.innerHTML = html;
+
         }
 
         function render() {
