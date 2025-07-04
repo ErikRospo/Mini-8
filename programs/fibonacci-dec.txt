@@ -1,0 +1,51 @@
+JMP $main
+
+
+label $decprint:
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    MOV 0, r2
+    
+label $hundreds_loop
+    JLT r0, 100, $after_hundreds
+    SUB r0, 100, r0
+    ADD r2, 1, r2
+    JMP $hundreds_loop
+
+label $after_hundreds
+    WRT r2, 0b01 ; DEC output
+
+    MOV 0, r2
+
+label $tens_loop
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    ADD r2, 1, r2
+    JMP $tens_loop
+
+label $after_tens
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0
+    POP r1
+    POP r2
+    POP r7 ; RET 
+
+label $main:
+
+MOV 0x00, r0
+MOV 0x01, r1
+MOV 13, r2
+
+
+label $loop: ; fibonacci numbers
+    MOV r0, r3
+    ADD r0, r1, r0
+    CALL $decprint
+    WRT 10, 0b00 ; Write newline to the terminal in ascii format
+    MOV r3, r1
+    SUB r2, 0x01, r2 ; Decrement r2
+    JNE r2, 0x00, $loop

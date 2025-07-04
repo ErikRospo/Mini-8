@@ -1,0 +1,120 @@
+MOV 0x00, RAMADDR
+MOV 0x02, r0
+MOV 20, r2
+
+PUSH r2
+label $initloop:
+    MOV r0, RAMDATA
+    ADD RAMADDR, 1, RAMADDR
+    SUB r2, 1, r2
+    ROR r0, 2, r1
+    ROL r0, 3, r3
+    XOR r2, r3, r0
+    
+    JNE r2, 0, $initloop
+
+POP r2
+PUSH r2
+MOV 0 RAMADDR
+
+    
+label $printoutloop1
+    MOV RAMDATA r0
+    CALL $decprint
+    WRT 0x20, 0
+    ADD RAMADDR 1 RAMADDR
+    
+
+    JNE RAMADDR r2 $printoutloop1
+
+POP r2
+PUSH r2
+ADD r2 1 r2
+MOV 1, r1 ;Swapped
+
+label $outerloop:
+    JEQ r1, 0, $end_sort
+    MOV 0 r0 ; Index
+    MOV 0 r1 ;Swapped
+
+label $inner_loop
+    SUB r2 2 r3 ; r3 is length of array minus 2
+    JLT r0 r3 $inner_body ;if the index is greater than the length of the array minus 
+    JMP $end_outer_loop
+
+label $inner_body
+    MOV r0 RAMADDR
+    MOV RAMDATA r1
+    ADD r0 1 r3
+    MOV r3 RAMADDR
+    MOV RAMDATA r3
+    JGT r1 r3 $do_swap
+
+    ADD r0 1 r0
+    JMP $inner_loop
+
+label $do_swap
+    MOV r0 RAMADDR
+    MOV r3 RAMDATA
+    ADD r0 1 RAMADDR
+    MOV r1 RAMDATA
+    MOV 1 r1
+    ADD r0 1 r0
+    JMP $inner_loop
+
+label $end_outer_loop
+    SUB r2 1 r2
+    JMP $outerloop
+
+label $end_sort
+    JMP $printout
+
+
+label $decprint:
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    MOV 0, r2
+    
+label $hundreds_loop
+    JLT r0, 100, $after_hundreds
+    SUB r0, 100, r0
+    ADD r2, 1, r2
+    JMP $hundreds_loop
+
+label $after_hundreds
+    WRT r2, 0b01 ; DEC output
+
+    MOV 0, r2
+
+label $tens_loop
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    ADD r2, 1, r2
+    JMP $tens_loop
+
+label $after_tens
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0
+    POP r1
+    POP r2
+    POP r7 ; RET 
+
+label $printout
+    MOV 0 RAMADDR
+    POP r2
+    WRT 10, 0
+    
+label $printoutloop
+    MOV RAMDATA r0
+    CALL $decprint
+    WRT 0x20, 0
+    ADD RAMADDR 1 RAMADDR
+    
+
+    JNE RAMADDR r2 $printoutloop
+
+HCF

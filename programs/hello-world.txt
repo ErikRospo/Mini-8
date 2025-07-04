@@ -1,0 +1,17 @@
+
+WRT 'H', 0b00
+WRT 'e', 0b00
+WRT 'l', 0b00
+WRT 'l', 0b00
+WRT 'o', 0b00
+WRT 44, 0b00
+WRT 32, 0b00
+
+WRT 'W', 0b00
+WRT 'o', 0b00
+WRT 'r', 0b00
+WRT 'l', 0b00
+WRT 'd', 0b00
+WRT '!', 0b00
+
+WRT 10, 0b00

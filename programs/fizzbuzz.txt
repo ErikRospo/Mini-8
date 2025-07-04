@@ -1,0 +1,100 @@
+JMP $main
+
+label $modulo ; modulo implementation
+    ; R2 = R0 mod R1
+    ; clobbers R2
+    PUSH r0
+    PUSH r1 
+    MOV r0, r2
+label $modulo_loop
+    JLT r2, r1, $mod_done
+    SUB r2, r1, r2;
+    JMP $modulo_loop
+
+label $mod_done
+    POP r1
+    POP r0 
+    POP r7 ; ret
+
+label $fizzbuzz ; Fizzbuzz printing implementation 
+    OR r3, 1, r3
+    JEQ r1, 5, $bu
+
+label $fi
+    WRT "F", 0b00
+    WRT "i", 0b00
+    JMP $zz
+
+label $bu
+    WRT "B", 0b00
+    WRT "u", 0b00
+
+label $zz
+    WRT "z", 0b00
+    WRT "z", 0b00
+    POP r7    
+
+label $decprint: ; Decimal Printing implementation
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    MOV 0, r2
+    
+label $hundreds_loop:
+    JLT r0, 100, $after_hundreds
+    SUB r0, 100, r0
+    ADD r2, 1, r2
+    JMP $hundreds_loop
+
+label $after_hundreds:
+    WRT r2, 0b01 ; DEC output
+
+    MOV 0, r2
+
+label $tens_loop:
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    ADD r2, 1, r2
+    JMP $tens_loop
+
+label $after_tens:
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0
+    POP r1
+    POP r2
+    POP r7 ; RET 
+
+label $main:
+    MOV 0, r0 ;counter
+
+
+
+label $loop:
+
+    MOV 0, r3 ;FB flag
+
+    MOV 3, r1
+    CALL $modulo
+    JNE r2, 0, $afterfizzcheck
+    CALL $fizzbuzz
+
+label $afterfizzcheck:
+    MOV 5, r1
+    CALL $modulo
+    JNE r2, 0, $afterbuzzcheck
+    CALL $fizzbuzz
+
+label $afterbuzzcheck:
+    JEQ r3, 1, $fizzedorbuzzed
+    CALL $decprint
+label $fizzedorbuzzed:
+    WRT 10, 0b00
+    ADD r0, 1, r0
+    JEQ r0, 255, $end
+    JMP $loop
+
+label $end:
+    HCF

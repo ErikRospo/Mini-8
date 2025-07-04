@@ -27,6 +27,9 @@ jobs:
       - run: pandoc ISA.md --from gfm -o _site/ISA.html -s --template=./web/ISA-template.html
       - run: cp ./web/mini-8.html _site/mini-8.html
       - run: cp ./web/index.html _site/index.html
+      - run: mkdir _site/demos
+      - run: cp ./programs/* -r _site/demos/
+
       - name: Upload artifact
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v3

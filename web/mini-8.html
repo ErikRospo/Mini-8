@@ -225,7 +225,14 @@
 
             <label for="vmSpeed">Speed (ms per step):</label>
             <input type="number" id="vmSpeed" value="1000" min="50" step="50">
-
+            <label for="demos">Select Demo</label>
+            <select id="demos">
+                <option value="hello-world">Hello, World!</option>
+                <option value="fibonacci-hex">Fibonacci Numbers (hex)</option>
+                <option value="fibonacci-dec">Fibonacci Numbers (dec)</option>
+                <option value="fizzbuzz">FizzBuzz</option>
+                <option value="sort">Bubblesort</option>
+            </select>
         </div>
     </div>
 
@@ -272,13 +279,34 @@
             }
 
             getOperand(val, isImm) {
-                return isImm ? val : this.reg[val & 0x7];
+                if (!isImm) {
+                    if (val === 5) {
+                        // r5 behaves like ram[r4]
+                        return this.ram[this.reg[4]];
+                    }
+                    return this.reg[val & 0x7];
+                }
+                return val;
             }
 
+
             setReg(idx, value) {
-                if (idx === 6) return; // r6 is reserved
-                this.reg[idx] = value & 0xFF;
+                if (idx === 6) return; // r6 reserved
+
+                value = value & 0xFF;
+
+                if (idx === 5) {
+                    // Write to ram at address in r4
+                    this.ram[this.reg[4]] = value;
+                } else {
+
+                    this.reg[idx] = value;
+                }
+                if (idx === 4) {
+                    this.reg[5] = this.ram[value]
+                }
             }
+
 
             wrt(val, fmt) {
                 let ch = "";
@@ -716,7 +744,19 @@
         const outputEl = document.getElementById("output")
         const RAMEl = document.getElementById("ram")
         const stackEl = document.getElementById("stack")
+        const selector = document.getElementById("demos")
+        selector.addEventListener('change', async () => {
+            const value = selector.value;
+            if (value) {
+                // Fetch and inject the demo content into the container
+                const response = await fetch(`./demos/${value}.txt`);
+                const program = await response.text();
+                disasmEl.innerText = program;
+                vm = null;
+                render();
 
+            }
+        });
         render()
         function printOutput(output) {
             if (output === "\x00") {
