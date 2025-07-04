@@ -231,10 +231,6 @@ This instruction performs a bitwise AND operation between the value in `r0` and 
 Binary: `00100000 01010101 00000000 00000001`  
 AND is an ALU operation (`00` type + `001` subtype). As the second operand is an immediate, the opcode is `00100000` with the `2` bit set to indicate an immediate value. The operands are `r0`, `0b01010101`, and `r1`, which are `00000000`, `01010101`, and `00000001` respectively.
 
-`JMP 0x10`  
-This instruction jumps to the absolute address `0x10`.  
-Binary: `01000000 00010000 00000000 00000000`  
-JMP is a conditional operation (`01` type + `000` subtype), so the opcode is `01000000`. The operands are `0x10` (which is an immediate), and the destination is `r0`, which is `00000000`. The first operand is the address to jump to, so it is `00010000`.  
 
 `SUB r0, 0x80, r1`  
 This instruction subtracts the immediate value `0x80` from the value in `r0`, and stores the result in `r1`.  
