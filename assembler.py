@@ -90,6 +90,8 @@ def encode_operand(val, constants):
     if is_register(val):
         return REGISTERS[val]
     return parse_value(val, constants) & 0xFF
+
+
 def handle_shorthand_op(op: str, args: List[str]) -> List[str]:
     if op == "MOV":
         if len(args) == 2:
@@ -109,14 +111,14 @@ def handle_shorthand_op(op: str, args: List[str]) -> List[str]:
         args.append("0")
     elif op == "POP" and len(args) == 1:
         args = ["0", "0", args[0]]
-    elif op=="JMP" and len(args)==1:
-        args= ["0", "0", args[0]]
-    elif op=="CALL" and len(args)==1:
+    elif op == "JMP" and len(args) == 1:
+        args = ["0", "0", args[0]]
+    elif op == "CALL" and len(args) == 1:
         args.append("0")
         args.append("0")
-        
 
     return args
+
 
 # --- Assembler core ---
 def assemble(lines):
@@ -209,13 +211,11 @@ def assemble(lines):
                 result.append(line)
         return result
 
-
-
     expanded = expand_macros(expanded)
     # Second pass: assemble instructions
     pc = 0
     output = []
-    unresolved =[]
+    unresolved = []
     for line in expanded:
         # Remove inline labels (should not be present after first pass, but just in case)
         while True:
@@ -244,7 +244,7 @@ def assemble(lines):
         args = tokens[1:]
         # Fill missing args
         args = handle_shorthand_op(mnemonic, args)
-        
+
         # Macro expansion handled above
         # Label resolution in args (support labels as operands)
         for i, arg in enumerate(args):
@@ -276,7 +276,7 @@ def assemble(lines):
         # arg_idx: 0=op1, 1=op2, 2=dest
         output[instr_idx][arg_idx + 1] = val  # +1 because b1 is opcode
 
-    assert pc<256, "Program is too long, must be under 256 bytes long"
+    assert pc < 256, "Program is too long, must be under 256 bytes long"
     print(f"Program is {pc}/256 ({hex(pc).upper()}/0xFF) instructions long")
     return output
 
