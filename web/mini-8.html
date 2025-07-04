@@ -95,6 +95,7 @@
             <button id="stepBtn">Step</button>
             <input type="file" id="fileInput" style="display:none" accept=".bin,.mi8" />
             <button id="loadBtn">Load File</button>
+            <button id="formatBtn">Format</button>
         </div>
     </div>
 
@@ -108,144 +109,7 @@
             <pre id="disasm"></pre>
         </div>
     </div>
-
     <script>
-        let interval = null;
-        let vm = null;
-
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const stepBtn = document.getElementById('stepBtn');
-        const rawCodeInput = document.getElementById('rawCodeInput');
-        const disasmEl = document.getElementById('disasm');
-        const registersEl = document.getElementById('registers');
-
-        playPauseBtn.addEventListener('click', () => {
-            if (interval) {
-                clearInterval(interval);
-                interval = null;
-                playPauseBtn.textContent = 'Play';
-            } else {
-                if (!vm) loadVMFromRaw();
-                interval = setInterval(() => {
-                    vm.step();
-                    render();
-                    if (vm.halted) {
-                        clearInterval(interval);
-                        playPauseBtn.textContent = 'Play';
-                    }
-                }, 1000);
-                playPauseBtn.textContent = 'Pause';
-            }
-        });
-        const fileInput = document.getElementById('fileInput');
-        const loadBtn = document.getElementById('loadBtn');
-
-        loadBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (evt) {
-                let text = evt.target.result;
-                // Detect if this is a hex dump (mostly hex digits and whitespace, few non-printables)
-                const hexLike = /^[\s0-9a-fA-F]+$/m.test(text) && (text.match(/[0-9a-fA-F]/g) || []).length > 8;
-                if (hexLike) {
-                    // Normalize: replace all non-hex chars with spaces, then collapse spaces
-                    text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
-                } else {
-                    // Interpret as raw text: convert each char to two-digit hex
-                    text = Array.from(text)
-                        .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
-                        .join(' ');
-                }
-                rawCodeInput.value = text;
-                vm = null;
-                updateDisassembly();
-            };
-            reader.readAsText(file);
-        });
-        stepBtn.addEventListener('click', () => {
-            if (!vm) loadVMFromRaw();
-            vm.step();
-            render();
-        });
-
-        rawCodeInput.addEventListener('input', () => {
-            vm = null; // Reset VM when code changes
-            updateDisassembly();
-        });
-        rawCodeInput.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            rawCodeInput.style.background = '#222'; // Visual feedback
-        });
-
-        rawCodeInput.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            rawCodeInput.style.background = '#000';
-        });
-
-        rawCodeInput.addEventListener('drop', (e) => {
-            e.preventDefault();
-            rawCodeInput.style.background = '#000';
-            const file = e.dataTransfer.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (evt) {
-                let text = evt.target.result;
-                // Normalize: replace all non-hex chars with spaces, then collapse spaces
-                text = text.replace(/[^0-9a-fA-F]/g, ' ').replace(/\s+/g, ' ').trim();
-                rawCodeInput.value = text;
-                vm = null;
-                updateDisassembly();
-            };
-            reader.readAsText(file);
-        });
-
-        function loadVMFromRaw() {
-            const bytes = rawCodeInput.value
-                .trim()
-                .split(/\s+/)
-                .map(b => parseInt(b, 16) || 0);
-            vm = new MiniMachineVM(new Uint8Array(bytes));
-            render();
-        }
-
-        function updateDisassembly() {
-            const bytes = rawCodeInput.value
-                .trim()
-                .split(/\s+/)
-                .map(b => parseInt(b, 16) || 0);
-            const disassembly = [];
-            for (let i = 0; i < bytes.length; i += 4) {
-                if (i + 3 >= bytes.length) break;
-                const instr = bytes.slice(i, i + 4);
-                const dis = MiniMachineVM.prototype.disassemble(...instr);
-                disassembly.push(dis);
-            }
-            disasmEl.textContent = disassembly.join('\n');
-        }
-
-        function render() {
-            // Registers
-            const names = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'PC'];
-            registersEl.innerHTML = '';
-            names.forEach((n, i) => {
-                if (n == 'r6') {
-                    return
-                }
-                const val = vm ? vm.reg[i].toString(16).padStart(2, '0') : '00';
-                const div = document.createElement('div');
-                div.className = 'register';
-                div.textContent = `${n}: ${val}`;
-                registersEl.appendChild(div);
-            });
-            updateDisassembly();
-        }
-
-        render()
         class MiniMachineVM {
             constructor(program) {
                 this.reg = new Array(8).fill(0); // r0-r7
@@ -429,7 +293,7 @@
                 const subtype = opcode & 0x7;
 
                 const regName = idx => `r${idx & 0x7}`;
-                const opVal = (val, imm) => imm ? `${val} (0x${val.toString(16).toUpperCase()})` : regName(val);
+                const opVal = (val, imm) => imm ? `0x${val.toString(16).toUpperCase()}` : regName(val);
 
                 const immStr = `_${imm1 ? 'i' : 'r'}${imm2 ? 'i' : 'r'}`;
 
@@ -438,9 +302,9 @@
                     const aluOps = ["AND", "ROR", "ADD", "XOR", "OR", "ROL", "SUB", "NOT"];
                     const op = aluOps[subtype] || "???";
                     if (op === "NOT") {
-                        return `${op}${immStr} ${opVal(op1, imm1)}, ${regName(dest)}`;
+                        return `${op} ${opVal(op1, imm1)}, ${regName(dest)}`;
                     } else {
-                        return `${op}${immStr} ${opVal(op1, imm1)}, ${opVal(op2, imm2)}, ${regName(dest)}`;
+                        return `${op} ${opVal(op1, imm1)}, ${opVal(op2, imm2)}, ${regName(dest)}`;
                     }
                 } else if (opclass === 0b01) {
                     // COND
@@ -451,27 +315,27 @@
                     } else if (op === "NOP") {
                         return `${op}`;
                     } else {
-                        return `${op}${immStr} ${opVal(op1, imm1)}, ${opVal(op2, imm2)}, ${dest}`;
+                        return `${op} ${opVal(op1, imm1)}, ${opVal(op2, imm2)}, ${dest}`;
                     }
                 } else if (opclass === 0b10) {
                     // IO
                     const ioOps = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "JRE", "HCF"];
                     const op = ioOps[subtype] || "???";
                     if (op === "MOV") {
-                        return `${op}${immStr} ${opVal(op1, imm1)}, ${regName(dest)}`;
+                        return `${op} ${opVal(op1, imm1)}, ${regName(dest)}`;
                     } else if (op === "SWAP") {
-                        return `${op}${immStr} ${regName(op1)}, ${regName(dest)}`;
+                        return `${op} ${regName(op1)}, ${regName(dest)}`;
                     } else if (op === "PUSH") {
-                        return `${op}${immStr} ${opVal(op1, imm1)}`;
+                        return `${op} ${opVal(op1, imm1)}`;
                     } else if (op === "POP") {
-                        return `${op}${immStr} ${regName(dest)}`;
+                        return `${op} ${regName(dest)}`;
                     } else if (op === "WRT") {
                         const fmtNames = ["ASC", "DEC", "ALP", "HEX"];
                         const fmt = op2 & 0x3;
                         const fmtStr = fmtNames[fmt] || fmt.toString();
-                        return `${op}${immStr} ${opVal(op1, imm1)}, ${fmtStr}`;
+                        return `${op} ${opVal(op1, imm1)}, 0b${fmt.toString(2)}`;
                     } else if (op === "CALL") {
-                        return `${op}${immStr} ${opVal(op1, imm1)}`;
+                        return `${op} ${opVal(op1, imm1)}`;
                     } else if (op === "JRE" || op === "HCF") {
                         return `${op}`;
                     } else {
@@ -481,8 +345,165 @@
                     return "???";
                 }
             }
-
         }
+    </script>
+
+    <script>
+        let interval = null;
+        let vm = null;
+
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        const rawCodeInput = document.getElementById('rawCodeInput');
+        const disasmEl = document.getElementById('disasm');
+        const registersEl = document.getElementById('registers');
+
+        playPauseBtn.addEventListener('click', () => {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+                playPauseBtn.textContent = 'Play';
+            } else {
+                if (!vm) loadVMFromRaw();
+                interval = setInterval(() => {
+                    vm.step();
+                    render();
+                    if (vm.halted) {
+                        clearInterval(interval);
+                        playPauseBtn.textContent = 'Play';
+                    }
+                }, 1000);
+                playPauseBtn.textContent = 'Pause';
+            }
+        });
+        const fileInput = document.getElementById('fileInput');
+        const loadBtn = document.getElementById('loadBtn');
+
+        loadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                const buffer = evt.target.result;
+                // Convert ArrayBuffer to hex string
+                const bytes = new Uint8Array(buffer);
+                const text = Array.from(bytes)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join(' ');
+                rawCodeInput.value = text;
+                vm = null;
+                updateDisassembly();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        stepBtn.addEventListener('click', () => {
+            if (!vm) loadVMFromRaw();
+            vm.step();
+            render();
+        });
+
+        rawCodeInput.addEventListener('input', () => {
+            vm = null; // Reset VM when code changes
+            updateDisassembly();
+        });
+        rawCodeInput.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            rawCodeInput.style.background = '#222'; // Visual feedback
+        });
+
+        rawCodeInput.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            rawCodeInput.style.background = '#000';
+        });
+
+        rawCodeInput.addEventListener('drop', (e) => {
+            e.preventDefault();
+            rawCodeInput.style.background = '#000';
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                const buffer = evt.target.result;
+                // Convert ArrayBuffer to hex string
+                const bytes = new Uint8Array(buffer);
+                const text = Array.from(bytes)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join(' ');
+                rawCodeInput.value = text;
+                vm = null;
+                updateDisassembly();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        const formatBtn = document.getElementById('formatBtn');
+        formatBtn.addEventListener('click', () => {
+            // Remove all non-hex chars and condense to a single string
+            let hexStr = rawCodeInput.value.replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+
+            // Split into 2-char bytes
+            let bytes = [];
+            for (let i = 0; i < hexStr.length; i += 2) {
+                bytes.push(hexStr.substr(i, 2));
+            }
+
+            // Format into lines of 4 bytes each
+            let lines = [];
+            for (let i = 0; i < bytes.length; i += 4) {
+                lines.push(bytes.slice(i, i + 4).join(' '));
+            }
+            rawCodeInput.value = lines.join('\n');
+            vm = null;
+            updateDisassembly();
+        });
+
+        function loadVMFromRaw() {
+            const bytes = rawCodeInput.value
+                .trim()
+                .split(/\s+/)
+                .map(b => parseInt(b, 16) || 0);
+            vm = new MiniMachineVM(new Uint8Array(bytes));
+            render();
+        }
+
+        function updateDisassembly() {
+            const bytes = rawCodeInput.value
+                .trim()
+                .split(/\s+/)
+                .map(b => parseInt(b, 16) || 0);
+            const disassembly = [];
+            for (let i = 0; i < bytes.length; i += 4) {
+                if (i + 3 >= bytes.length) break;
+                const instr = bytes.slice(i, i + 4);
+                const dis = MiniMachineVM.prototype.disassemble(...instr);
+                disassembly.push(dis);
+            }
+            disasmEl.textContent = disassembly.join('\n');
+        }
+
+        function render() {
+            // Registers
+            const names = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'PC'];
+            registersEl.innerHTML = '';
+            names.forEach((n, i) => {
+                if (n == 'r6') {
+                    return
+                }
+                const val = vm ? vm.reg[i].toString(16).padStart(2, '0') : '00';
+                const div = document.createElement('div');
+                div.className = 'register';
+                div.textContent = `${n}: ${val}`;
+                registersEl.appendChild(div);
+            });
+            updateDisassembly();
+        }
+
+        render()
+
     </script>
 </body>
 
