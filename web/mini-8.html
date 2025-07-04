@@ -94,6 +94,17 @@
         button:disabled {
             opacity: 0.5;
         }
+        #output {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre;
+            min-height: 100px;
+            overflow-y: auto;
+            outline: none;
+        }
 
         .disasm-editor {
             background: #000;
@@ -172,6 +183,9 @@
         <div class="panel">
             <h2>Raw Code</h2>
             <textarea id="rawCodeInput" spellcheck="false"></textarea>
+            <h2>Output</h2>
+            <div id="output"></div>
+
         </div>
         <div class="panel">
             <h2>Registers</h2>
@@ -216,7 +230,7 @@
                 let ch = "";
                 switch (fmt) {
                     case 0:
-                        ch = val === 0 ? "\n" : String.fromCharCode(val);
+                        ch = val === 0 ? "\x00" : String.fromCharCode(val);
                         break;
                     case 1:
                         ch = val <= 9 ? val.toString() : "?";
@@ -640,6 +654,16 @@
 
         const registersEl = document.getElementById('registers');
         const documentationButton = document.getElementById("documentation")
+        
+        const outputEl=document.getElementById("output")
+        function printOutput(output){
+            if (output==="\x00"){
+                outputEl.innerText=""
+            }
+            else{
+                outputEl+=output
+            }
+        }
         documentationButton.addEventListener("click", () => {
             window.open("/Mini-8/ISA")
         })
