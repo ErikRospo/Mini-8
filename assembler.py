@@ -287,7 +287,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input assembly file")
-    parser.add_argument("-o", "--output", help="Output binary file", default="out.mc8")
+    parser.add_argument("-o", "--output", help="Output binary file", default="out.mi8")
     args = parser.parse_args()
     with open(args.input) as f:
         lines = f.readlines()

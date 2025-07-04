@@ -262,8 +262,8 @@ if __name__ == "__main__":
         sys.argv.remove("-v")
     
     if len(sys.argv) < 2:
-        program_file = "out.mc8"
-        print("No program specified, defaulting to out.mc8")
+        program_file = "out.mi8"
+        print("No program specified, defaulting to out.mi8")
     else:
         program_file = sys.argv[1]
     with open(program_file, "rb") as f:

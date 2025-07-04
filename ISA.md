@@ -1,4 +1,4 @@
-# Micro-8 ISA documentation
+# Mini-8 ISA documentation
 
 
 **4 bytes per instruction:**  
@@ -113,6 +113,7 @@ Writes to `r7` WILL change the program counter, and thus the next instruction to
 When an instruction is executed, the program counter (`r7`) is automatically incremented by 1, so the next instruction will be executed in sequence.
 Implementations should ensure that the storage medium used returns the next 32 bits/4 bytes of the program per 1 PC value. 
 That is, the PC value indexes *instructions*, *NOT* bytes.
+For example, if the PC value is `0x00`, the storage index should be `0x000`. If the PC value is 0x01, the storage index should be `0x004`
 
 ## Immediates
 
