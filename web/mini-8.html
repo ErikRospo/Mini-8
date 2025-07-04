@@ -221,6 +221,8 @@
             <button id="assembleBtn">Assemble</button>
 
             <button id="documentation">Documentation/ISA</button>
+            <button id="reset">Reset VM</button>
+
             <label for="vmSpeed">Speed (ms per step):</label>
             <input type="number" id="vmSpeed" value="1000" min="50" step="50">
 
@@ -535,8 +537,8 @@
             val = val.trim();
             if (val in constants) return constants[val];
             if (/^['"](.{1})['"]$/.test(val)) return val.charCodeAt(1);
-            if (val.startsWith("0x")) return parseInt(val, 16);
-            if (val.startsWith("0b")) return parseInt(val, 2);
+            if (val.startsWith("0x")) return parseInt(val.replace("0x", ""), 16);
+            if (val.startsWith("0b")) return parseInt(val.replace("0b", ""), 2);
             if (/^\d+$/.test(val)) return parseInt(val, 10);
             throw new Error("Unknown value: " + val);
         }
@@ -702,6 +704,7 @@
         const playPauseBtn = document.getElementById('playPauseBtn');
         const stepBtn = document.getElementById('stepBtn');
         const assembleBtn = document.getElementById('assembleBtn');
+        const resetBtn = document.getElementById('reset');
 
         const rawCodeInput = document.getElementById('rawCodeInput');
         const disasmEl = document.getElementById('disasm');
@@ -751,6 +754,15 @@
                 playPauseBtn.textContent = 'Pause';
             }
         });
+        resetBtn.addEventListener("click", () => {
+            if (vm) {
+                vm = null;
+            }
+            outputEl.innerText = ""
+            RAMEl.innerText = ""
+            stackEl.innerText = ""
+            render();
+        })
 
         // Change VM speed while running
         speedInput.addEventListener('input', () => {
