@@ -95,6 +95,29 @@
             opacity: 0.5;
         }
 
+        input[type="number"] {
+            background: #222;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        /* Optional: Remove spinner arrows in Chrome, Edge, Safari */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Optional: Remove spinner arrows in Firefox */
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+
         #output {
             background: #000;
             color: #0f0;
@@ -172,12 +195,16 @@
         <div class="controls">
             <button id="playPauseBtn">Play</button>
             <button id="stepBtn">Step</button>
+
             <input type="file" id="fileInput" style="display:none" accept=".bin,.mi8" />
             <button id="loadBtn">Load File</button>
             <button id="formatBtn">Format</button>
             <button id="assembleBtn">Assemble</button>
 
             <button id="documentation">Documentation/ISA</button>
+            <label for="vmSpeed">Speed (ms per step):</label>
+            <input type="number" id="vmSpeed" value="1000" min="50" step="50">
+
         </div>
     </div>
 
@@ -656,8 +683,10 @@
 
         const registersEl = document.getElementById('registers');
         const documentationButton = document.getElementById("documentation")
+        const speedInput = document.getElementById("vmSpeed")
 
         const outputEl = document.getElementById("output")
+        render()
         function printOutput(output) {
             if (output === "\x00") {
                 outputEl.innerText = ""
@@ -669,6 +698,19 @@
         documentationButton.addEventListener("click", () => {
             window.open("/Mini-8/ISA")
         })
+        function startVMInterval(delay) {
+            if (interval) clearInterval(interval);
+            interval = setInterval(() => {
+                vm.step();
+                render();
+                if (vm.halted) {
+                    clearInterval(interval);
+                    interval = null;
+                    playPauseBtn.textContent = 'Play';
+                }
+            }, delay);
+        }
+
         playPauseBtn.addEventListener('click', () => {
             if (interval) {
                 clearInterval(interval);
@@ -676,17 +718,21 @@
                 playPauseBtn.textContent = 'Play';
             } else {
                 if (!vm) loadVMFromRaw();
-                interval = setInterval(() => {
-                    vm.step();
-                    render();
-                    if (vm.halted) {
-                        clearInterval(interval);
-                        playPauseBtn.textContent = 'Play';
-                    }
-                }, 1000);
+                const delay = parseInt(speedInput.value, 10) || 1000;
+                startVMInterval(delay);
                 playPauseBtn.textContent = 'Pause';
             }
         });
+
+        // Change VM speed while running
+        speedInput.addEventListener('input', () => {
+            if (interval) {
+                const delay = parseInt(speedInput.value, 10) || 1000;
+                startVMInterval(delay); // restart with new speed
+            }
+        });
+
+
         const fileInput = document.getElementById('fileInput');
         const loadBtn = document.getElementById('loadBtn');
 
