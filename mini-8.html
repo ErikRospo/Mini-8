@@ -18,8 +18,12 @@
         Debug mode
     </label>
     <button id="stepBtn" onclick="stepVM()" disabled>Step</button>
-  <pre id="output"></pre>
-
+    <h2>Output</h2>
+    <pre id="output"></pre>
+    <h2>Registers</h2>
+    <pre id="registers" style="margin-top:1em;"></pre>
+    <h2>Disassembly</h2>
+    <pre id="disasm" style="margin-top:1em;"></pre>
   <script>
     let programBytes = null;
 
@@ -47,31 +51,37 @@
       document.getElementById("output").textContent = "";
     }
 
-    function runVM() {
-      if (!programBytes) {
-        alert("Please load a program file first.");
-        return;
-      }
+function runVM() {
+  if (!programBytes) {
+    alert("Please load a program file first.");
+    return;
+  }
+  vm = new MiniMachineVM(programBytes); // Make vm global for stepping
+  clearOutput();
+  if (document.getElementById("stepMode").checked) {
+    printOutput("Debug mode enabled. Click 'Step' to execute instructions.\n");
+    document.getElementById("stepBtn").disabled = false;
+    document.getElementById("registers").style.display = "";
+    document.getElementById("disasm").style.display = "";
+    vm.renderRegisters();
+  } else {
+    document.getElementById("registers").style.display = "none";
+    document.getElementById("disasm").style.display = "none";
+    vm.run();
+  }
+}
 
-      const vm = new MiniMachineVM(programBytes);
-        clearOutput();
-        if (document.getElementById("stepMode").checked) {
-            printOutput("Debug mode enabled. Click 'Step' to execute instructions.\n");
-            document.getElementById("stepBtn").disabled = false;
-        } else {
-            vm.run();
-        }
-    }
-    function stepVM() {
-        if (!vm || vm.halted) {
-        printOutput("\n[Program Halted]\n");
-        return;
-        }
-        vm.step();
-        if (vm.halted) {
-        printOutput("\n[Program Halted]\n");
-        }
-    }
+function stepVM() {
+  if (!vm || vm.halted) {
+    printOutput("\n[Program Halted]\n");
+    return;
+  }
+  vm.step();
+  vm.renderRegisters();
+  if (vm.halted) {
+    printOutput("\n[Program Halted]\n");
+  }
+}
     class MiniMachineVM {
       constructor(program) {
         this.reg = new Array(8).fill(0); // r0-r7
@@ -223,6 +233,12 @@
           this.reg[this.PC] = (this.reg[this.PC] + 1) % 256;
         }
       }
+renderRegisters() {
+  const names = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "PC"];
+  let out = names.map((n, i) => `${n}: ${this.reg[i].toString(16).padStart(2, "0")}`).join("  ");
+  document.getElementById("registers").textContent = out;
+}
+
 
         run() {
         while (!this.halted) {
