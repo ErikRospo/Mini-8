@@ -660,12 +660,12 @@
                 pc++;
                 i++;
             }
-        
+
 
             // --- Macro expansion ---
             function expandMacros(lines, parentArgs = {}) {
                 const result = [];
-                for (let {line, origLine} of lines) {
+                for (let { line, origLine } of lines) {
                     const tokens = line.trim().split(/[,\s]+/);
                     const mnemonic = tokens[0].toUpperCase();
                     if (macros[mnemonic]) {
@@ -676,14 +676,14 @@
                         const substitute = str => {
                             for (let [k, v] of Object.entries(argMap)) str = str.replaceAll(k, v);
                             for (let [k, v] of Object.entries(parentArgs)) str = str.replaceAll(k, v);
-                            return {line:str,origLine};
+                            return { line: str, origLine };
                         };
 
                         const body = macroBody.map(substitute);
                         result.push(...expandMacros(body, argMap));
                     } else {
                         for (let [k, v] of Object.entries(parentArgs)) line = line.replaceAll(k, v);
-                        result.push({line,origLine});
+                        result.push({ line, origLine });
                     }
                 }
                 return result;
@@ -695,7 +695,7 @@
             pc = 0;
             const output = [];
 
-            for (let {line,origLine} of expanded) {
+            for (let { line, origLine } of expanded) {
                 while (line.match(/^(\w+):\s*(.*)/)) {
                     const m = line.match(/^(\w+):\s*(.*)/);
                     if (!m) break;
@@ -751,7 +751,7 @@
         let interval = null;
         let vm = null;
 
-        let lineToPCMap={}
+        let lineToPCMap = {}
         // Keep track of previous register values
         const previousRegs = {};
 
@@ -849,21 +849,21 @@
             fileInput.click();
         });
         assembleBtn.addEventListener("click", () => {
-            lineToPCMap=assemble()
+            lineToPCMap = assemble()
             const disasmEl = document.getElementById("disasm");
             const lines = disasmEl.innerText.split("\n");
-            disasmEl.innerHTML=""
+            disasmEl.innerHTML = ""
             let pc = 0;
             for (let i = 0; i < lines.length; i++) {
-                pc=lineToPCMap[i]||pc
+                pc = lineToPCMap[i] || pc
                 const lineEl = document.createElement('div');
                 lineEl.className = 'dis-line';
                 lineEl.dataset.pc = fpc(pc);
-                if (lines[i]===""){
+                if (lines[i] === "") {
                     continue
                 }
                 lineEl.textContent = lines[i];
-                lineEl.style=`--line-num:${pc}`
+                lineEl.style = `--line-num:${pc}`
                 disasmEl.appendChild(lineEl);
 
             }
@@ -956,8 +956,8 @@
             vm = new MiniMachineVM(new Uint8Array(bytes));
             render();
         }
-        function fpc(pc){
-            return pc.toString(16).padStart(2,"0")
+        function fpc(pc) {
+            return pc.toString(16).padStart(2, "0")
         }
         function updateDisassembly(currentPC = null) {
             const bytes = rawCodeInput.value
@@ -977,7 +977,7 @@
                 lineEl.className = 'dis-line';
                 lineEl.dataset.pc = fpc(pc);
                 lineEl.textContent = dis;
-                lineEl.style=`--line-num:${pc}`
+                lineEl.style = `--line-num:${pc}`
 
                 disasmEl.appendChild(lineEl);
             }
