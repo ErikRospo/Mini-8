@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>MiniMachineVM</title>
+    <title>Mini-8 VM</title>
     <style>
         body {
             font-family: monospace;
@@ -226,7 +226,7 @@
 
 <body>
     <div class="top-bar">
-
+        <h1>Mini-8</h1>
         <div class="controls">
             <button id="playPauseBtn">Play</button>
             <button id="stepBtn">Step</button>
@@ -771,11 +771,24 @@
         const RAMEl = document.getElementById("ram")
         const stackEl = document.getElementById("stack")
         const selector = document.getElementById("demos")
+        if (localStorage.getItem("program") !==null){
+            disasmEl.innerHTML=localStorage.getItem("program")
+        }
+        window.addEventListener("onbeforeunload",()=>{
+            localStorage.setItem("program",disasmEl.innerHTML)
+        })
+                window.addEventListener("onreload",()=>{
+            localStorage.setItem("program",disasmEl.innerHTML)
+        })
         selector.addEventListener('change', async () => {
             const value = selector.value;
             if (value) {
                 // Fetch and inject the demo content into the container
                 const response = await fetch(`./demos/${value}.txt`);
+                if (!response.ok){
+                    alert(`The demo ${value} could not be loaded`)
+                    return
+                }
                 const program = await response.text();
                 disasmEl.innerText = program;
                 vm = null;
