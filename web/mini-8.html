@@ -944,8 +944,6 @@
                 lines.push(bytes.slice(i, i + 4).join(' '));
             }
             rawCodeInput.value = lines.join('\n');
-            vm = null;
-            updateDisassembly(0);
         });
 
         function loadVMFromRaw() {
