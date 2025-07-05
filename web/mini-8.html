@@ -115,6 +115,7 @@
             -moz-appearance: textfield;
             appearance: textfield;
         }
+
         select {
             background: #222;
             color: #0f0;
@@ -122,14 +123,16 @@
             padding: 4px 8px;
             cursor: pointer;
             font-family: inherit;
-            appearance: none; /* Removes native styling */
+            appearance: none;
+            /* Removes native styling */
             -webkit-appearance: none;
             -moz-appearance: none;
             background-image: url("data:image/svg+xml;utf8,<svg fill='%230f0' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
             background-repeat: no-repeat;
             background-position: right 8px center;
             background-size: 16px;
-            padding-right: 28px; /* make room for arrow */
+            padding-right: 28px;
+            /* make room for arrow */
         }
 
 
@@ -185,7 +188,7 @@
         }
 
         .disasm-editor .dis-line::before {
-            content: attr(data-line);
+            content: attr(data-pc);
             position: absolute;
             left: 0;
             color: #0f0;
@@ -212,15 +215,7 @@
             white-space: pre;
         }
 
-        .dis-line::before {
-            content: var(--line-num);
-            position: absolute;
-            left: 0;
-            color: #0f0;
-            opacity: 0.5;
-            pointer-events: none;
-            user-select: none;
-        }
+
 
         .register.flash {
             color: #000;
@@ -240,6 +235,8 @@
             <button id="loadBtn">Load File</button>
             <button id="formatBtn">Format</button>
             <button id="assembleBtn">Assemble</button>
+            <button id="disassembleBtn">Disassemble</button>
+
 
             <button id="documentation">Documentation/ISA</button>
             <button id="reset">Reset VM</button>
@@ -259,7 +256,7 @@
 
     <div class="panel-container">
         <div class="panel">
-            <h2>Raw Code</h2>
+            <h2>Machine Code</h2>
             <textarea id="rawCodeInput" spellcheck="false"></textarea>
             <h2>Output</h2>
             <div id="output" class="txtbx"></div>
@@ -274,7 +271,7 @@
             <div class="registers" id="registers">
                 <!-- Registers rendered here -->
             </div>
-            <h2>Disassembly</h2>
+            <h2>Assembly</h2>
             <div id="disasm" contenteditable="true" class="disasm-editor" spellcheck="false"></div>
         </div>
     </div>
@@ -622,6 +619,8 @@
         }
 
         function assemble() {
+            let origLineToPc = {};  // Maps original line index to PC counter
+
             const disasmEl = document.getElementById("disasm");
             const rawCodeInput = document.getElementById("rawCodeInput");
             const lines = disasmEl.innerText.split("\n");
@@ -656,15 +655,17 @@
                     }
                 }
 
-                expanded.push(line);
+                expanded.push({ line, origLine: i });
+
                 pc++;
                 i++;
             }
+        
 
             // --- Macro expansion ---
             function expandMacros(lines, parentArgs = {}) {
                 const result = [];
-                for (let line of lines) {
+                for (let {line, origLine} of lines) {
                     const tokens = line.trim().split(/[,\s]+/);
                     const mnemonic = tokens[0].toUpperCase();
                     if (macros[mnemonic]) {
@@ -675,14 +676,14 @@
                         const substitute = str => {
                             for (let [k, v] of Object.entries(argMap)) str = str.replaceAll(k, v);
                             for (let [k, v] of Object.entries(parentArgs)) str = str.replaceAll(k, v);
-                            return str;
+                            return {line:str,origLine};
                         };
 
                         const body = macroBody.map(substitute);
                         result.push(...expandMacros(body, argMap));
                     } else {
                         for (let [k, v] of Object.entries(parentArgs)) line = line.replaceAll(k, v);
-                        result.push(line);
+                        result.push({line,origLine});
                     }
                 }
                 return result;
@@ -694,7 +695,7 @@
             pc = 0;
             const output = [];
 
-            for (let line of expanded) {
+            for (let {line,origLine} of expanded) {
                 while (line.match(/^(\w+):\s*(.*)/)) {
                     const m = line.match(/^(\w+):\s*(.*)/);
                     if (!m) break;
@@ -729,6 +730,7 @@
                 const b3 = encodeOperand(op2, constants);
                 const b4 = encodeOperand(dest, constants);
                 output.push([b1, b2, b3, b4]);
+                origLineToPc[origLine] = pc;
                 pc++;
             }
 
@@ -741,12 +743,15 @@
             // --- Emit ---
             const hex = output.flat().map(b => b.toString(16).padStart(2, '0')).join(" ");
             rawCodeInput.value = hex;
+            return origLineToPc
         }
 
     </script>
     <script>
         let interval = null;
         let vm = null;
+
+        let lineToPCMap={}
         // Keep track of previous register values
         const previousRegs = {};
 
@@ -777,6 +782,9 @@
                 render();
 
             }
+        });
+        document.getElementById("disassembleBtn").addEventListener("click", () => {
+            updateDisassembly();
         });
         render()
         function printOutput(output) {
@@ -841,7 +849,25 @@
             fileInput.click();
         });
         assembleBtn.addEventListener("click", () => {
-            assemble()
+            lineToPCMap=assemble()
+            const disasmEl = document.getElementById("disasm");
+            const lines = disasmEl.innerText.split("\n");
+            disasmEl.innerHTML=""
+            let pc = 0;
+            for (let i = 0; i < lines.length; i++) {
+                pc=lineToPCMap[i]||pc
+                const lineEl = document.createElement('div');
+                lineEl.className = 'dis-line';
+                lineEl.dataset.pc = fpc(pc);
+                if (lines[i]===""){
+                    continue
+                }
+                lineEl.textContent = lines[i];
+                lineEl.style=`--line-num:${pc}`
+                disasmEl.appendChild(lineEl);
+
+            }
+
         })
 
         fileInput.addEventListener('change', (e) => {
@@ -930,7 +956,9 @@
             vm = new MiniMachineVM(new Uint8Array(bytes));
             render();
         }
-
+        function fpc(pc){
+            return pc.toString(16).padStart(2,"0")
+        }
         function updateDisassembly(currentPC = null) {
             const bytes = rawCodeInput.value
                 .trim()
@@ -938,19 +966,26 @@
                 .map(b => parseInt(b, 16) || 0);
 
             disasmEl.innerHTML = '';
-            for (let i = 0, line = 1; i + 3 < bytes.length; i += 4, line++) {
+
+            let pc = 0;
+
+            for (let i = 0; i + 3 < bytes.length; i += 4, pc++) {
                 const instr = bytes.slice(i, i + 4);
                 const dis = MiniMachineVM.prototype.disassemble(...instr);
-                const isCurrent = currentPC !== null && (i / 4) === currentPC;
 
                 const lineEl = document.createElement('div');
                 lineEl.className = 'dis-line';
-                if (isCurrent) lineEl.classList.add('current-pc');
-                lineEl.dataset.line = line.toString(16).padStart(2, '0').toUpperCase();
+                lineEl.dataset.pc = fpc(pc);
                 lineEl.textContent = dis;
+                lineEl.style=`--line-num:${pc}`
 
                 disasmEl.appendChild(lineEl);
             }
+        }
+
+        function highlightCurrentPC(pc) {
+            document.querySelectorAll(".current-pc").forEach(el => el.classList.remove("current-pc"))
+            document.querySelectorAll(`[data-pc='${fpc(pc)}']`).forEach(el => el.classList.add("current-pc"))
 
         }
 
@@ -973,7 +1008,6 @@
                     setTimeout(() => div.classList.remove('flash'), 300);
                 }
 
-                // Update stored value
                 previousRegs[n] = val;
                 registersEl.appendChild(div);
             });
@@ -988,7 +1022,8 @@
             // Update stackEl with hex pairs from vm.stack
             stackEl.innerText = vm ? vm.stack.map(toHex).join(' ') : "";
 
-            updateDisassembly(vm ? vm.reg[7] : null);
+            if (vm) highlightCurrentPC(vm.reg[7]);
+
         }
 
 
