@@ -970,12 +970,11 @@
                 // Compare to previous value and flash if changed
                 if (previousRegs[n] !== val) {
                     div.classList.add('flash');
-                    setTimeout(() => div.classList.remove('flash'), 300); // adjust duration as needed
+                    setTimeout(() => div.classList.remove('flash'), 300);
                 }
 
                 // Update stored value
                 previousRegs[n] = val;
-
                 registersEl.appendChild(div);
             });
             // Function to convert a number to a 2-digit hex string
