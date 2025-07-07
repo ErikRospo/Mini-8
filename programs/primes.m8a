@@ -1,16 +1,16 @@
 MOV 1, r0 ; r0 is our number
 
 label $outerloop:
-    AND r1, 0xFE, r1
-    ROR r0, 1, r1 ; No SHR instruction, masking and ROR is as close as can be
-    ; r1 is r0 /2, upper bound
-
+    MOV 2, r1 ; start divisor at 2
+    AND r0, 0xFE, r3
+    ROR r3, 1, r3 ; r3 = r0 / 2
 
 label $innerloop:
-    JLT r1, 2, $innerloop_prime ; if no factors have been found, it's a prime
+
+    JGT r1, r3, $innerloop_prime ; if divisor > upper bound, it's a prime
     CALL $modulo ; r0 mod r1, result in r2
     JEQ r2, 0, $innerloop_composite ; If we've found a divisor, end early.
-    SUB r1, 1, r1 ; decrement divisor
+    ADD r1, 1, r1 ; increment divisor
     JMP $innerloop ; repeat
 
 label $innerloop_composite:
@@ -26,15 +26,11 @@ label $innerloop_done:
     CALL $decprint ;Print the number
     WRT 10, 0b00 ; newline
 
-
     ADD r0, 1, r0 ; add one and if we've overflowed, halt
     JNE r0, 0, $outerloop
     HCF
 
-
 ; n/2 == ROR + AND 7f
-
-
 
 label $modulo ; modulo implementation
     ; R2 = R0 mod R1
