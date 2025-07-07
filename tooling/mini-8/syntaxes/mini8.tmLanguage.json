@@ -19,12 +19,16 @@
       "match": "\\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|JRE|HCF)\\b"
     },
     {
-      "name": "keyword.control.mini8",
-      "match": "\\blabel\\b"
+      "name": "variable.other.predefined.register.mini8",
+      "match": "\\b(?:r[0-8]|PC|RAMADDR|RAMDATA)+\\b"
     },
     {
-      "name": "variable.register.mini8",
-      "match": "\\b(?:r[0-8]|PC|RAMADDR|RAMDATA)+\\b"
+      "name": "entity.name.function",
+      "match": "\\b[A-Z_][A-Z0-9_]*\\b"
+    },
+    {
+      "name": "keyword.control.mini8",
+      "match": "\\blabel\\b"
     },
     {
       "name": "constant.numeric.hex.mini8",
@@ -51,8 +55,34 @@
       "match": "\\blabel\\s+\\$\\w+:"
     },
     {
+      "name": "entity.name.function.mini8",
+      "match": "\\b(define|end)\\b"
+    },
+    {
       "name": "variable.label.reference.mini8",
       "match": "\\$\\w+"
+    },
+    {
+      "name": "meta.macro.mini8",
+      "begin": "\\bdefine\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:\\(([^)]*)\\))?:",
+      "beginCaptures": {
+        "0": { "name": "keyword.other.define.mini8" },
+        "1": { "name": "entity.name.function.macro.mini8" },
+        "2": { "name": "variable.other.macro.mini8" }
+      },
+      "end": "\\bend\\b",
+      "endCaptures": {
+        "0": { "name": "keyword.other.end.mini8" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#alu" },
+        { "include": "#cond" },
+        { "include": "#io" },
+        { "include": "#constants" },
+        { "include": "#strings" },
+        { "include": "#labels" }
+      ]
     }
   ],
   "scopeName": "source.mini8"
