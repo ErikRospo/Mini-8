@@ -1,0 +1,88 @@
+MOV 1, r0 ; r0 is our number
+
+label $outerloop:
+    AND r1, 0xFE, r1
+    ROR r0, 1, r1 ; No SHR instruction, masking and ROR is as close as can be
+    ; r1 is r0 /2, upper bound
+
+
+label $innerloop:
+    JLT r1, 2, $innerloop_prime ; if no factors have been found, it's a prime
+    CALL $modulo ; r0 mod r1, result in r2
+    JEQ r2, 0, $innerloop_composite ; If we've found a divisor, end early.
+    SUB r1, 1, r1 ; decrement divisor
+    JMP $innerloop ; repeat
+
+label $innerloop_composite:
+    WRT "C", 0b00 ;C: in ascii mode
+    WRT ":", 0b00 
+    JMP $innerloop_done
+
+label $innerloop_prime:
+    WRT "P", 0b00 ;P: in ascii mode
+    WRT ":", 0b00 
+
+label $innerloop_done:
+    CALL $decprint ;Print the number
+    WRT 10, 0b00 ; newline
+
+
+    ADD r0, 1, r0 ; add one and if we've overflowed, halt
+    JNE r0, 0, $outerloop
+    HCF
+
+
+; n/2 == ROR + AND 7f
+
+
+
+label $modulo ; modulo implementation
+    ; R2 = R0 mod R1
+    ; clobbers R2
+    PUSH r0
+    PUSH r1 
+    MOV r0, r2
+label $modulo_loop
+    JLT r2, r1, $mod_done
+    SUB r2, r1, r2;
+    JMP $modulo_loop
+
+label $mod_done
+    POP r1
+    POP r0 
+    POP r7 ; ret
+
+
+label $decprint: ; Decimal Printing implementation
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    MOV 0, r2
+    
+label $hundreds_loop:
+    JLT r0, 100, $after_hundreds
+    SUB r0, 100, r0
+    ADD r2, 1, r2
+    JMP $hundreds_loop
+
+label $after_hundreds:
+    WRT r2, 0b01 ; DEC output
+
+    MOV 0, r2
+
+label $tens_loop:
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    ADD r2, 1, r2
+    JMP $tens_loop
+
+label $after_tens:
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0
+    POP r1
+    POP r2
+    POP r7 ; RET 
+
