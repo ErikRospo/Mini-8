@@ -784,7 +784,7 @@
             const value = selector.value;
             if (value) {
                 // Fetch and inject the demo content into the container
-                const response = await fetch(`./demos/${value}.txt`);
+                const response = await fetch(`./demos/${value}.m8a`);
                 if (!response.ok){
                     alert(`The demo ${value} could not be loaded`)
                     return
