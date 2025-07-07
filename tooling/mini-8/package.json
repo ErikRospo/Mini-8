@@ -1,0 +1,25 @@
+{
+  "name": "mini-8",
+  "displayName": "Mini-8 Assembly Support",
+  "description": "Mini-8 is a fantasy 8-bit RISC-like CPU. This extension provides language support and allows for syntax highlighting.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "mini8",
+      "aliases": ["Mini-8", "mini8"],
+      "extensions": [".m8a"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "mini8",
+      "scopeName": "source.mini8",
+      "path": "./syntaxes/mini8.tmLanguage.json"
+    }]
+  }
+}

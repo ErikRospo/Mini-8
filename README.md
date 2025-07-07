@@ -6,6 +6,7 @@ See [ISA.md](ISA.md) for the CPU's instruction set architecture (ISA) details.
 
 WARNING: This project is a work in progress hobbyist project and may not be fully functional or stable. Do not use it in production systems. It is intended for educational purposes and to demonstrate basic CPU design concepts.
 
+You can install the extension in `./tooling/mini-8/mini-8-0.0.1.vsix` for syntax highlighting/language support in VSC. 
 ## Features
 - 8-bit architecture
 - Simple instruction set with basic arithmetic, logic, and control instructions

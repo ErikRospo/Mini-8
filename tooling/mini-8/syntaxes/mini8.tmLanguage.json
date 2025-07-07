@@ -1,0 +1,59 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Mini-8",
+  "patterns": [
+    {
+      "name": "comment.line.semicolon.mini8",
+      "match": ";.*$"
+    },
+    {
+      "name": "keyword.other.alu.mini8",
+      "match": "\\b(?:AND|ROR|ADD|XOR|OR|ROL|SUB|NOT)\\b"
+    },
+    {
+      "name": "keyword.other.cond.mini8",
+      "match": "\\b(?:JMP|JNE|JGE|JGT|NOP|JEQ|JLT|JLE)\\b"
+    },
+    {
+      "name": "keyword.other.io.mini8",
+      "match": "\\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|JRE|HCF)\\b"
+    },
+    {
+      "name": "keyword.control.mini8",
+      "match": "\\blabel\\b"
+    },
+    {
+      "name": "variable.register.mini8",
+      "match": "\\b(?:r[0-8]|PC|RAMADDR|RAMDATA)+\\b"
+    },
+    {
+      "name": "constant.numeric.hex.mini8",
+      "match": "\\b0x[0-9a-fA-F]+\\b"
+    },
+    {
+      "name": "constant.numeric.binary.mini8",
+      "match": "\\b0b[01]+\\b"
+    },
+    {
+      "name": "constant.numeric.decimal.mini8",
+      "match": "\\b\\d+\\b"
+    },
+    {
+      "name": "string.quoted.single",
+      "match": "'[^\\s,\"']'"
+    },
+        {
+      "name": "string.quoted.double",
+      "match": "\"[^\\s,\"']\""
+    },
+    {
+      "name": "entity.name.label.mini8",
+      "match": "\\blabel\\s+\\$\\w+:"
+    },
+    {
+      "name": "variable.label.reference.mini8",
+      "match": "\\$\\w+"
+    }
+  ],
+  "scopeName": "source.mini8"
+}
