@@ -22,7 +22,7 @@ WRT 0x20, 0b00
 WRT "1", 0b00
 WRT "-", 0b00
 WRT "1", 0b00
-WRT "5", 0b00
+WRT "6", 0b00
 WRT 10, 0b00
 
 
