@@ -23,7 +23,7 @@
       "match": "\\b(?:r[0-8]|PC|RAMADDR|RAMDATA)+\\b"
     },
     {
-      "name": "entity.name.function",
+      "name": "entity.name.function.mini8",
       "match": "\\b[A-Z_][A-Z0-9_]*\\b"
     },
     {
@@ -43,32 +43,29 @@
       "match": "\\b\\d+\\b"
     },
     {
-      "name": "string.quoted.single",
+      "name": "string.quoted.single.mini8",
       "match": "'[^\\s,\"']'"
     },
     {
-      "name": "string.quoted.double",
+      "name": "string.quoted.double.mini8",
       "match": "\"[^\\s,\"']\""
     },
     {
       "name": "entity.name.label.mini8",
       "match": "\\blabel\\s+\\$\\w+:"
     },
-    {
-      "name": "entity.name.function.mini8",
-      "match": "\\b(define|end)\\b"
-    },
+
     {
       "name": "variable.label.reference.mini8",
       "match": "\\$\\w+"
     },
     {
       "name": "meta.macro.mini8",
-      "begin": "\\bdefine\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:\\(([^)]*)\\))?:",
+      "begin": "\\bdefine\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:\\((?:([a-zA-Z][A-Za-z0-9]+),?)+\\))?:",
       "beginCaptures": {
         "0": { "name": "keyword.other.define.mini8" },
         "1": { "name": "entity.name.function.macro.mini8" },
-        "2": { "name": "variable.other.macro.mini8" }
+        "2": { "name": "variable.parameter.mini8" }
       },
       "end": "\\bend\\b",
       "endCaptures": {
@@ -83,6 +80,10 @@
         { "include": "#strings" },
         { "include": "#labels" }
       ]
+    },
+    {
+      "name": "keyword.control.mini8",
+      "match": "\\b(define|end)\\b"
     }
   ],
   "scopeName": "source.mini8"

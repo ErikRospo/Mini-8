@@ -2,6 +2,7 @@
   "name": "mini-8",
   "displayName": "Mini-8 Assembly Support",
   "description": "Mini-8 is a fantasy 8-bit RISC-like CPU. This extension provides language support and allows for syntax highlighting.",
+  "repository": "https://github.com/ErikRospo/Mini-8",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.101.0"
