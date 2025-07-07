@@ -1,3 +1,4 @@
+; This first section shows how one could implement a really simple PRNG
 MOV 0x00, RAMADDR
 MOV 0x02, r0 ; Seed
 MOV 20, r2
@@ -10,8 +11,11 @@ label $initloop:
     ROR r0, 2, r1
     ROL r0, 3, r3
     XOR r2, r3, r0
-    
+    ;The basic idea is to rotate left by some, right by some, and then XOR the two together.
+    ;It's not secure, it's not advanced, but it works well enough. 
     JNE r2, 0, $initloop
+;end PRNG
+
 
 POP r2 ; pop r2 back and duplicate it back onto the stack
 PUSH r2
