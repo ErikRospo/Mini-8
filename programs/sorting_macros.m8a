@@ -20,7 +20,7 @@ define LOAD(addr_reg, dest):
 end
 
 define SAVE(val):
-   MOV RAMDATA, val
+   MOV val, RAMDATA
    ADD RAMADDR, 0x01, RAMADDR
 end
 
