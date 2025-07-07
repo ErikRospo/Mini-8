@@ -1,0 +1,165 @@
+define ZERO(reg):
+      MOV 0x00, reg
+end
+
+define INC(reg):
+      ADD reg, 0x01, reg
+end
+
+define DEC(reg):
+      SUB reg, 0x01, reg
+end
+
+define RET:
+      POP r7
+end
+
+define LOAD(addr_reg, dest):
+    MOV addr_reg, RAMADDR
+    MOV RAMDATA, dest
+end
+
+define SAVE(val):
+   MOV RAMDATA, val
+   ADD RAMADDR, 0x01, RAMADDR
+end
+
+ZERO RAMADDR
+MOV 0x02, r0 ; Seed
+MOV 20, r2
+
+PUSH r2
+label $initloop:
+    SAVE r0 
+    SUB r2, 1, r2
+    ROR r0, 2, r1
+    ROL r0, 3, r3
+    XOR r2, r3, r0
+    
+    JNE r2, 0, $initloop
+
+POP r2 ; pop r2 back and duplicate it back onto the stack
+PUSH r2
+
+MOV 0, RAMADDR
+
+    
+label $printoutloop1
+    MOV RAMDATA, r0
+    CALL $decprint
+    WRT 0x20, 0
+    INC RAMADDR
+    
+
+    JNE RAMADDR, r2, $printoutloop1
+
+POP r2 ; ^ duplicate r2 back onto the stack
+PUSH r2
+
+INC r2 ;Fix off-by-one error.
+MOV 1, r1 ;Swapped first go, to not immediately exit
+
+;This is a basic in-place bubble sort algorithm, for demonstration.
+label $outerloop:
+    JEQ r1, 0, $end_sort ; If we haven't swapped, exit, as the list is already sorted.
+    ZERO r0 ; Index
+    ZERO r1 ; Swapped
+
+label $inner_loop
+    SUB r2, 2, r3 ; r3 is length of array minus 2
+    JLT r0, r3, $inner_body ; if the index is less than the length of the array minus 2, jump to the inner body
+    JMP $end_outer_loop ; Otherwise, jump out
+
+label $inner_body
+    LOAD r0, r1 ; r1= RAM[r0]
+
+    ADD r0, 1, r3    ; Read RAM[INDEX+1] into r3
+    LOAD r3, r3 ; r3= RAM[INDEX+1]
+
+    ; If r1>r3, swap them. Must not be an JGE, as it'd otherwise swap infinitely.
+    JGT r1, r3, $do_swap
+
+    INC r0
+    ;JUMP back up to the inner loop.
+    JMP $inner_loop
+
+label $do_swap
+    MOV r0, RAMADDR ; Write the current index to RAMADDR
+    MOV r3, RAMDATA ; Then write the lower number to RAM
+
+    INC RAMADDR 
+    MOV r1, RAMDATA ; Then store the higher number at the RAMADDR+1
+    MOV 1, r1 ;We've made a swap
+    
+    INC r0 ; Increase the index by 1
+    JMP $inner_loop ; Jump back up
+
+label $end_outer_loop
+    ;Decrease the bounds through which we are looking
+    DEC r2
+    ;and jump back up
+    JMP $outerloop
+
+label $end_sort
+    ;If we're done, start printing
+    JMP $printout
+
+
+label $decprint:
+    ; This algorithm essentially boils down to the following:
+    ; Subtract 100 from r0 until it's less than 100, recording the number of times we do that
+    ; Print that number
+    ; Rinse and repeat with the number that's now in r0 (r0 MOD 100) for 10
+    ; Print that number
+    ; Now, we just have the ones digit, and we can directly print that out.
+    ; This is required because we only have single-character outputs.
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    ZERO r2
+    
+label $hundreds_loop
+    JLT r0, 100, $after_hundreds ;If we're already < 100, or if we've gotten to < 100, jump out
+    SUB r0, 100, r0 ;Subtract 100 from r0, trying to get it under 100
+    INC r2 ; Increase the counter keeping track of the hundreds.
+    JMP $hundreds_loop ;Jump back up
+
+label $after_hundreds
+    WRT r2, 0b01 ; Write the number of times we had to loop out in decimal mode (0b01)
+
+    ZERO r2 ;Reset r2
+
+label $tens_loop
+    ;Same idea as before, but for tens.
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    INC r2
+    JMP $tens_loop
+
+label $after_tens
+    ;Write the counter (tens digit), then the remainder (r0) out to the terminal
+    ;Both in decimal (0b01) mode.
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0 ; Pop all operands back in order 
+    POP r1
+    POP r2
+    RET
+
+label $printout
+    ZERO RAMADDR
+    POP r2
+    WRT 10, 0
+    
+label $printoutloop
+    MOV RAMDATA, r0
+    CALL $decprint
+    WRT 0x20, 0
+    INC RAMADDR
+    
+
+    JNE RAMADDR, r2, $printoutloop
+
+HCF

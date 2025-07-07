@@ -141,7 +141,7 @@ How the stack is implemented is left up to implementations. However, it must fol
 
 The stack pointer is left intentionally hidden from programs. This is a conscious design decision to allow for flexibility in implementations.
 
-## Suggested Assembler Macros
+## Suggested Macros
 
 The following macros are suggested to make programming in this architecture easier:
 
