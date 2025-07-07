@@ -1,0 +1,134 @@
+WRT "M", 0b00
+WRT "u", 0b00
+WRT "l", 0b00
+WRT "t", 0b00
+WRT "i", 0b00
+WRT "p", 0b00
+WRT "l", 0b00
+WRT "i", 0b00
+WRT "c", 0b00
+WRT "a", 0b00
+WRT "t", 0b00
+WRT "i", 0b00
+WRT "o", 0b00
+WRT "n", 0b00
+WRT 0x20, 0b00
+WRT "T", 0b00
+WRT "a", 0b00
+WRT "b", 0b00
+WRT "l", 0b00
+WRT "e", 0b00
+WRT 0x20, 0b00
+WRT "1", 0b00
+WRT "-", 0b00
+WRT "1", 0b00
+WRT "5", 0b00
+WRT 10, 0b00
+
+
+
+;header
+MOV 1, r0
+WRT "X", 0b00
+WRT "X", 0b00
+WRT "X", 0b00
+WRT 0x20, 0b00
+
+label $hloop:
+    CALL $decprint
+    WRT 0x20, 0b00 ; Space in ASCII mode.
+    ADD r0, 1, r0
+    JLE r0, 16, $hloop
+
+WRT 10, 0b00
+MOV 1, r0
+label $outerloop
+
+CALL $decprint
+WRT 0x20, 0b00 ; Space in ASCII mode.
+MOV 1, r1
+
+label $innerloop
+
+CALL $mult
+PUSH r0
+MOV r2, r0
+; This is a bit of a cheat. I can't represent 256 in 8 bits, so I fake 0=256
+; In essence, if I were to multiply 0x10 by 0x10, I'd get 0x100. But that gets trimmed to 0x00.
+; So, 16*16=0, mod 256.
+; Again, this is a bit of a cheat to print that number, but I think it's a worthwhile compromise.
+JEQ r0, 0, $complete
+
+CALL $decprint
+POP r0
+WRT 0x20, 0b00
+ADD r1, 1, r1
+JLE r1, 16, $innerloop
+WRT 10, 0b00
+
+ADD r0, 1, r0
+JLE r0, 16, $outerloop
+
+label $complete:
+WRT "2", 0b00
+WRT "5", 0b00
+WRT "6", 0b00
+
+HCF
+
+
+    
+
+
+
+
+label $mult ; mult implementation
+    ; R2 = R0*R1
+    ; clobbers R2
+    PUSH r0
+    PUSH r1 
+    MOV 0, r2
+label $mult_loop
+    ADD r2, r0, r2;
+    SUB r1, 1, r1
+    JNE r1, 0, $mult_loop
+
+label $mult_done
+    POP r1
+    POP r0 
+    POP r7 ; ret
+
+
+
+label $decprint:
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    MOV 0, r2
+    
+label $hundreds_loop
+    JLT r0, 100, $after_hundreds
+    SUB r0, 100, r0
+    ADD r2, 1, r2
+    JMP $hundreds_loop
+
+label $after_hundreds
+    WRT r2, 0b01 ; DEC output
+
+    MOV 0, r2
+
+label $tens_loop
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    ADD r2, 1, r2
+    JMP $tens_loop
+
+label $after_tens
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0
+    POP r1
+    POP r2
+    POP r7 ; RET 
