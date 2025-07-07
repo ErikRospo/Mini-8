@@ -1,3 +1,6 @@
+; This version treats 1 as a prime number, which is not technically correct,
+; but avoids having to program in a special case for 1.
+
 MOV 1, r0 ; r0 is our number
 
 label $outerloop:
