@@ -141,6 +141,36 @@ How the stack is implemented is left up to implementations. However, it must fol
 
 The stack pointer is left intentionally hidden from programs. This is a conscious design decision to allow for flexibility in implementations.
 
+
+## Recommended Assembler Behavior
+
+The assembler SHOULD:
+
+- Automatically fill in the immediate bits for instructions that require them, such as `MOV`, `ADD`, `SUB`, etc.
+- Automatically fill in the immediate bits with `0` for instructions that do not use them, such as `NOP`, `HCF`, etc.
+- If arguments are not provided and the instruction does not require them, the assembler SHOULD fill the arguments with `0` by default. For example, `MOV r0, r1` should be equivalent to `MOV r0, 0x00, r1`. In cases where this is ambiguous or impossible, the assembler SHOULD error out and warn the user.
+- If DEST is not provided, the assembler SHOULD fill it with `r0` by default, and MUST warn the user during assembly. The exception to warning the user is for instructions that do not use DEST, such as `NOP` or `WRT`. See the [Subtypes](#subtypes) table for a comprehensive list of instructions that do not use `DEST`
+- The assembler must support the following immediate argument types: - Decimal (default). Any integer value specified without a prefix should be interpreted as a base-10 integer. - Hexadecimal. Any integer value specified with the `0x` prefix should be interpreted as a base-16 integer. - Binary. Any integer value specified with the `0b` prefix should be interpreted as a base 2 (binary) number. - Character. Any single letter specified between single or double quotes (`'` or `"`) should be interpreted as a number corresponding to it's ASCII ordinal. If that character is not part of the ASCII standard, an assembler error should be raised. - Implementations MAY error if special characters are used in character literals. Special characters that Assemblers may warn are the following: 1. `,` (comma, ASCII `0x2C`) 2. `:` (colon, ASCII `0x3A`) - Implementations MUST error if any non-printable ASCII character (those with ordinals `0x00`-`0x1F` and `0x7f`) is found inside a character literal.
+
+## Assembler Directives
+
+The assembler SHOULD support the following directive:
+
+1. `label $label_name:`
+   This directive defines a label that can be used to jump to a specific location in the code.  
+   This allows for easier code organization and readability, as well as the ability to jump to specific locations in the code without having to calculate the address manually.
+   Labels can be used in jump instructions, such as `JMP $label_name`, `JNE $label_name`, `JGE $label_name`, etc.  
+   The assembler SHOULD automatically calculate the address of the label, and replace the label with the address in the generated machine code.
+   Labels should start with a `$` wherever they are used
+
+The assembler MAY suppoty the following directives:
+2. `define constant_name value`
+   This directive defines a constant that can be used in the code. The assembler SHOULD replace all occurrences of the constant with the value in the generated machine code.
+
+3. `define macro_name(arg0, arg1): ... end`
+   This directive defines a macro that can be used in the code. The assembler SHOULD replace all occurrences of the macro with the expanded code in the generated machine code.
+   Macros can take arguments, and the assembler SHOULD replace the arguments with the values provided in the macro call.
+   Macros can be called like any other instruction. See [Macro Examples](#macro-examples) examples of how macros are called.
 ## Suggested Macros
 
 The following macros are suggested to make programming in this architecture easier:
@@ -176,35 +206,15 @@ define SAVE(val):
    MOV RAMDATA, val
    ADD RAMADDR, 0x01, RAMADDR
 end
+
 ```
+### Macro Examples
 
-## Recommended Assembler Behavior
-
-The assembler SHOULD:
-
-- Automatically fill in the immediate bits for instructions that require them, such as `MOV`, `ADD`, `SUB`, etc.
-- Automatically fill in the immediate bits with `0` for instructions that do not use them, such as `NOP`, `HCF`, etc.
-- If arguments are not provided and the instruction does not require them, the assembler SHOULD fill the arguments with `0` by default. For example, `MOV r0, r1` should be equivalent to `MOV r0, 0x00, r1`. In cases where this is ambiguous or impossible, the assembler SHOULD error out and warn the user.
-- If DEST is not provided, the assembler SHOULD fill it with `r0` by default, and MUST warn the user during assembly. The exception to warning the user is for instructions that do not use DEST, such as `NOP` or `WRT`. See the [Subtypes](#subtypes) table for a comprehensive list of instructions that do not use `DEST`
-- The assembler must support the following immediate argument types: - Decimal (default). Any integer value specified without a prefix should be interpreted as a base-10 integer. - Hexadecimal. Any integer value specified with the `0x` prefix should be interpreted as a base-16 integer. - Binary. Any integer value specified with the `0b` prefix should be interpreted as a base 2 (binary) number. - Character. Any single letter specified between single or double quotes (`'` or `"`) should be interpreted as a number corresponding to it's ASCII ordinal. If that character is not part of the ASCII standard, an assembler error should be raised. - Implementations MAY error if special characters are used in character literals. Special characters that Assemblers may warn are the following: 1. `,` (comma, ASCII `0x2C`) 2. `:` (colon, ASCII `0x3A`) - Implementations MUST error if any non-printable ASCII character (those with ordinals `0x00`-`0x1F` and `0x7f`) is found inside a character literal.
-
-## Assembler Directives
-
-The assembler SHOULD support the following directives:
-
-1. `label $label_name:`
-   This directive defines a label that can be used to jump to a specific location in the code.  
-   This allows for easier code organization and readability, as well as the ability to jump to specific locations in the code without having to calculate the address manually.
-   Labels can be used in jump instructions, such as `JMP $label_name`, `JNE $label_name`, `JGE $label_name`, etc.  
-   The assembler SHOULD automatically calculate the address of the label, and replace the label with the address in the generated machine code.
-   Labels should start with a `$` wherever they are used
-
-2. `define constant_name value`
-   This directive defines a constant that can be used in the code. The assembler SHOULD replace all occurrences of the constant with the value in the generated machine code.
-
-3. `define macro_name(arg0, arg1): ... end`
-   This directive defines a macro that can be used in the code. The assembler SHOULD replace all occurrences of the macro with the expanded code in the generated machine code.
-   Macros can take arguments, and the assembler SHOULD replace the arguments with the values provided in the macro call.
+```
+ZERO r0
+INC r0
+STORE r0, r0
+```
 
 ## Memory
 

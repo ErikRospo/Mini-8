@@ -248,8 +248,6 @@
           <option value="fibonacci-dec">Fibonacci Numbers (dec)</option>
           <option value="fizzbuzz">FizzBuzz</option>
           <option value="sorting">Bubblesort</option>
-          <option value="sorting_macros">Bubblesort (macros)</option>
-
         </select>
       </div>
     </div>
@@ -747,14 +745,13 @@
         console.log(lines);
 
         let constants = {},
-          macros = {},
           labels = {},
           pc = 0,
           code = [];
         let expanded = [],
           unresolved = [];
 
-        // --- First pass: Constants/Macros ---
+        // --- First pass: Constants ---
         for (let i = 0; i < lines.length; ) {
           let line = lines[i].split(";")[0].trim();
           if (!line) {
@@ -762,30 +759,12 @@
             continue;
           }
 
-          const defineMatch = line.match(
-            /^define\s+(\w+)(\((.*?)\))?(\:)?\s*(.*)?/
-          );
+          const defineMatch = line.match(/^define\s+(\w+)\s*(.*)?/);
           if (defineMatch) {
-            const [_, name, __, argstr, colon, body] = defineMatch;
-            const macroArgs = argstr
-              ? argstr.split(",").map((s) => s.trim())
-              : [];
-            if (colon) {
-              const macroLines = [];
-              i++;
-              while (i < lines.length && lines[i].trim() !== "end") {
-                if (!lines[i].startsWith("define"))
-                  macroLines.push(lines[i].split(";")[0].trim());
-                i++;
-              }
-              macros[name.toUpperCase()] = [macroArgs, macroLines];
-              i++;
-              continue;
-            } else {
-              constants[name] = parseValue(body, constants);
-              i++;
-              continue;
-            }
+            const [_, name, body] = defineMatch;
+            constants[name] = parseValue(body, constants);
+            i++;
+            continue;
           }
 
           expanded.push({ line, origLine: i });
@@ -793,40 +772,6 @@
           pc++;
           i++;
         }
-
-        // --- Macro expansion ---
-        function expandMacros(lines, parentArgs = {}) {
-          const result = [];
-          for (let { line, origLine } of lines) {
-            const tokens = line.trim().split(/[,\s]+/);
-            const mnemonic = tokens[0].toUpperCase();
-            if (macros[mnemonic]) {
-              const [macroArgs, macroBody] = macros[mnemonic];
-              const actualArgs = tokens.slice(1, 1 + macroArgs.length);
-              const argMap = Object.fromEntries(
-                macroArgs.map((k, i) => [k, actualArgs[i]])
-              );
-
-              const substitute = (str) => {
-                for (let [k, v] of Object.entries(argMap))
-                  str = str.replaceAll(k, v);
-                for (let [k, v] of Object.entries(parentArgs))
-                  str = str.replaceAll(k, v);
-                return { line: str, origLine };
-              };
-
-              const body = macroBody.map(substitute);
-              result.push(...expandMacros(body, argMap));
-            } else {
-              for (let [k, v] of Object.entries(parentArgs))
-                line = line.replaceAll(k, v);
-              result.push({ line, origLine });
-            }
-          }
-          return result;
-        }
-
-        expanded = expandMacros(expanded);
 
         // --- Second pass: Assemble ---
         pc = 0;
