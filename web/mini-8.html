@@ -146,10 +146,9 @@
       }
 
       #output.output-error {
-        color:#f00;
+        color: #f00;
         font-weight: bold;
       }
-
 
       #ram {
         min-height: 90px;
@@ -717,6 +716,11 @@
       }
 
       function isRegister(val) {
+        if (/^R[0-7]$/.test(val)) {
+          throw new Error(
+            `Register names must be lowercase (use "r${val[1]}" instead of "${val}")`
+          );
+        }
         return val in REGISTERS;
       }
 
@@ -773,7 +777,19 @@
           const defineMatch = line.match(/^define\s+(\w+)\s*(.*)?/);
           if (defineMatch) {
             const [_, name, body] = defineMatch;
-            constants[name] = parseValue(body, constants);
+            try {
+              if (body && isRegister(body.trim())) {
+                constants[name] = REGISTERS[body.trim()];
+              } else {
+                constants[name] = parseValue(body, constants);
+              }
+            } catch (err) {
+              throw new Error(
+                `Error parsing constant on line ${i + 1}: "${lines[i]}"\n${
+                  err.message
+                }`
+              );
+            }
             i++;
             continue;
           }
@@ -789,49 +805,69 @@
         const output = [];
 
         for (let { line, origLine } of expanded) {
-          while (line.match(/^(\w+):\s*(.*)/)) {
-            const m = line.match(/^(\w+):\s*(.*)/);
-            if (!m) break;
-            line = m[2];
-          }
-
-          if (!line.trim()) continue;
-
-          const tokens = line.trim().split(/[,\s]+/);
-          const mnemonic = tokens[0].toUpperCase();
-
-          if (mnemonic === "LABEL") {
-            const label = tokens[1].replace(/:$/, "");
-            labels[label] = pc;
-            constants[label] = pc;
-            continue;
-          }
-
-          let args = handleShorthand(mnemonic, tokens.slice(1));
-          for (let i = 0; i < 3; i++) {
-            if (args[i] in labels) args[i] = labels[args[i]].toString();
-            else if (args[i]?.startsWith("$")) {
-              unresolved.push([output.length, i, args[i].slice(1)]);
-              args[i] = "0";
+          let originalLineContent = lines[origLine];
+          try {
+            while (line.match(/^(\w+):\s*(.*)/)) {
+              const m = line.match(/^(\w+):\s*(.*)/);
+              if (!m) break;
+              line = m[2];
             }
-          }
 
-          if (!(mnemonic in OPCODES))
-            throw new Error("Unknown mnemonic: " + mnemonic);
-          const [op1, op2, dest] = args;
-          const b1 = encodeOpcode(mnemonic, op1, op2);
-          const b2 = encodeOperand(op1, constants);
-          const b3 = encodeOperand(op2, constants);
-          const b4 = encodeOperand(dest, constants);
-          output.push([b1, b2, b3, b4]);
-          origLineToPc[origLine] = pc;
-          pc++;
+            if (!line.trim()) continue;
+
+            const tokens = line.trim().split(/[,\s]+/);
+            const mnemonic = tokens[0].toUpperCase();
+
+            if (mnemonic === "LABEL") {
+              const label = tokens[1].replace(/:$/, "");
+              labels[label] = pc;
+              constants[label] = pc;
+              continue;
+            }
+
+            let args = handleShorthand(mnemonic, tokens.slice(1));
+            for (let i = 0; i < 3; i++) {
+              if (args[i] in labels) args[i] = labels[args[i]].toString();
+              else if (args[i]?.startsWith("$")) {
+                unresolved.push([output.length, i, args[i].slice(1)]);
+                args[i] = "0";
+              }
+            }
+
+            if (!(mnemonic in OPCODES))
+              throw new Error("Unknown mnemonic: " + mnemonic);
+            const [op1, op2, dest] = args;
+            let b1, b2, b3, b4;
+            try {
+              b1 = encodeOpcode(mnemonic, op1, op2);
+              b2 = encodeOperand(op1, constants);
+              b3 = encodeOperand(op2, constants);
+              b4 = encodeOperand(dest, constants);
+            } catch (err) {
+              throw new Error(
+                `Error encoding operands on line ${
+                  origLine + 1
+                }: "${originalLineContent}"\n${err.message}`
+              );
+            }
+            output.push([b1, b2, b3, b4]);
+            origLineToPc[origLine] = pc;
+            pc++;
+          } catch (err) {
+            throw new Error(
+              `Assembly error on line ${
+                origLine + 1
+              }: "${originalLineContent}"\n${err.message}`
+            );
+          }
         }
 
         // --- Resolve labels ---
         for (const [idx, argIdx, label] of unresolved) {
           if (!("$" + label in labels))
-            throw new Error("Undefined label: " + label);
+            throw new Error(
+              `Undefined label: $${label}\nReferenced at instruction #${idx}`
+            );
           output[idx][argIdx + 1] = labels["$" + label] & 0xff;
         }
 
@@ -966,8 +1002,8 @@
           outputEl.classList.add("output-error");
           return;
         }
-        if (outputEl.classList.contains("output-error")){
-          outputEl.innerText=""
+        if (outputEl.classList.contains("output-error")) {
+          outputEl.innerText = "";
           outputEl.classList.remove("output-error");
         }
 
