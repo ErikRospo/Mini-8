@@ -8,6 +8,9 @@ permissions:
   contents: read
   pages: write
   id-token: write
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -16,24 +19,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - uses: jdx/mise-action@v2
+      - name: Install Pandoc
+        uses: jdx/mise-action@v2
         with:
           install: true
           cache: true
           mise_toml: |
             [tools]
             pandoc = "latest"
-      - run: rm _site/.gitkeep
-      - run: pandoc ISA.md --from gfm -o _site/ISA.html -s --template=./web/ISA-template.html
-      - run: cp ./web/mini-8.html _site/mini-8.html
-      - run: cp ./web/*.js _site/
-      - run: cp ./web/*.css _site/
-      - run: cp ./web/index.html _site/index.html
-      - run: mkdir _site/demos
-      - run: cp ./programs/* -r _site/demos/
+
+      - name: Convert ISA document
+        run: pandoc ISA.md --from gfm -o web/public/ISA.html -s --template=./template/ISA-template.html
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - run: cd web
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        
+      - run: cd ..
+
 
       - name: Upload artifact
-        # Automatically uploads an artifact from the './_site' directory by default
+        with:
+          path: ./web/dist
         uses: actions/upload-pages-artifact@v3
 
   deploy:
