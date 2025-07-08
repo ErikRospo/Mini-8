@@ -26,6 +26,8 @@ jobs:
       - run: rm _site/.gitkeep
       - run: pandoc ISA.md --from gfm -o _site/ISA.html -s --template=./web/ISA-template.html
       - run: cp ./web/mini-8.html _site/mini-8.html
+      - run: cp ./web/*.js _site/
+      - run: cp ./web/*.css _site/
       - run: cp ./web/index.html _site/index.html
       - run: mkdir _site/demos
       - run: cp ./programs/* -r _site/demos/
