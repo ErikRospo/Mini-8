@@ -9,7 +9,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Pandoc
+      - name: Install Mise and tools
         uses: jdx/mise-action@v2
         with:
           install: true
@@ -27,17 +27,12 @@ jobs:
           mise_toml: |
             [tools]
             pandoc = "latest"
+            node = "latest"
 
       - name: Convert ISA document
         run: pandoc ISA.md --from gfm -o web/public/ISA.html -s --template=./template/ISA-template.html
-        
-      - run: cd web
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'npm'
+      - run: cd web
 
 
       - name: Install dependencies
@@ -47,7 +42,6 @@ jobs:
         run: npm run build
 
       - run: cd ..
-
 
       - name: Upload artifact
         with:
