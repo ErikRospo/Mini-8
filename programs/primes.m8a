@@ -1,7 +1,10 @@
 ; 1 isn't prime or composite, so handle that before doing anything else.
 WRT "N", 0b00
 WRT ":", 0b00
+WRT "0", 0b00
+WRT "0", 0b00
 WRT "1", 0b00
+WRT 10, 0b00
 
 MOV 2, r0 ; r0 is our number
 
