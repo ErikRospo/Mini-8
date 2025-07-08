@@ -1,5 +1,5 @@
-class MiniMachineVM {
-  constructor(program) {
+export class MiniMachineVM {
+  constructor(program, { printOutput, outputEl } = {}) {
     this.utf8Decoder = new TextDecoder("utf-8", { fatal: true });
     this.utf8Buffer = [];
     this.reg = new Array(8).fill(0); // r0-r7
@@ -8,6 +8,10 @@ class MiniMachineVM {
     this.program = program;
     this.halted = false;
     this.PC = 7; // r7 is PC
+
+    // Dependency injection for output
+    this.printOutput = printOutput || (() => {});
+    this.outputEl = outputEl || null;
   }
 
   fetch() {
@@ -53,19 +57,19 @@ class MiniMachineVM {
         this.handleUtf8Byte(val);
         break;
       case 1:
-        printOutput(val <= 9 ? val.toString() : "?");
+        this.printOutput(val <= 9 ? val.toString() : "?");
         break;
       case 2:
-        printOutput(val <= 25 ? String.fromCharCode(65 + val) : "?");
+        this.printOutput(val <= 25 ? String.fromCharCode(65 + val) : "?");
         break;
       case 3:
-        printOutput(val <= 15 ? val.toString(16).toUpperCase() : "?");
+        this.printOutput(val <= 15 ? val.toString(16).toUpperCase() : "?");
         break;
     }
   }
   handleUtf8Byte(byte) {
     if (byte === 0x00) {
-      outputEl.innerText = "";
+      if (this.outputEl) this.outputEl.innerText = "";
       this.utf8Buffer.length = 0;
       return;
     }
@@ -74,7 +78,7 @@ class MiniMachineVM {
 
     try {
       const decoded = this.utf8Decoder.decode(new Uint8Array(this.utf8Buffer));
-      printOutput(decoded);
+      this.printOutput(decoded);
       this.utf8Buffer.length = 0; // clear buffer after successful decode
     } catch (e) {
       // Incomplete UTF-8 sequence — keep buffering
@@ -230,7 +234,7 @@ class MiniMachineVM {
       if (!instr) break;
       this.execute(instr);
     }
-    printOutput("\n[Program Halted]\n");
+    this.printOutput("\n[Program Halted]\n");
   }
 
   step() {

@@ -1,3 +1,6 @@
+import { MiniMachineVM } from "./vm.js";
+import { assemble } from "./assembler.js";
+
 let interval = null;
 let vm = null;
 
@@ -222,7 +225,10 @@ function loadVMFromRaw() {
     .trim()
     .split(/\s+/)
     .map((b) => parseInt(b, 16) || 0);
-  vm = new MiniMachineVM(new Uint8Array(bytes));
+  vm = new MiniMachineVM(new Uint8Array(bytes), {
+    printOutput,
+    outputEl,
+  });
   render();
 }
 function fpc(pc) {

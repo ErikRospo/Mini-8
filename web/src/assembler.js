@@ -89,14 +89,8 @@ function handleShorthand(op, args) {
   return args;
 }
 
-function assemble() {
-  let origLineToPc = {}; // Maps original line index to PC counter
-
-  const disasmEl = document.getElementById("disasm");
-  const rawCodeInput = document.getElementById("rawCodeInput");
-  const lines = disasmEl.innerText.split("\n");
-  console.log(lines);
-
+export function assembleFromLines(lines) {
+  let origLineToPc = {};
   let constants = {},
     labels = {},
     pc = 0,
@@ -217,6 +211,15 @@ function assemble() {
     .flat()
     .map((b) => b.toString(16).padStart(2, "0"))
     .join(" ");
+  return { hex, origLineToPc };
+}
+
+// For browser compatibility, keep a DOM-based wrapper
+export function assemble() {
+  const disasmEl = document.getElementById("disasm");
+  const rawCodeInput = document.getElementById("rawCodeInput");
+  const lines = disasmEl.innerText.split("\n");
+  const { hex, origLineToPc } = assembleFromLines(lines);
   rawCodeInput.value = hex;
   return origLineToPc;
 }
