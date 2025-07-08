@@ -14,13 +14,13 @@ export default function init_mini8() {
         [/\bend\b/, "keyword"],
 
         // ALU keywords
-        [/\b(?:AND|ROR|ADD|XOR|OR|ROL|SUB|NOT)\b/, "keyword"],
+        [/\b(?:AND|ROR|ADD|XOR|OR|ROL|SUB|NOT)\b/, "keyword.alu"],
 
         // Conditional keywords
-        [/\b(?:JMP|JNE|JGE|JGT|NOP|JEQ|JLT|JLE)\b/, "keyword"],
+        [/\b(?:JMP|JNE|JGE|JGT|NOP|JEQ|JLT|JLE)\b/, "keyword.cond"],
 
         // IO keywords
-        [/\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|JRE|HCF)\b/, "keyword"],
+        [/\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|JRE|HCF)\b/, "keyword.io"],
 
         // Registers
         [/\b(?:r[0-8]|PC|RAMADDR|RAMDATA)\b/, "variable.predefined"],
@@ -46,28 +46,40 @@ export default function init_mini8() {
         // Double quoted char
         [/\"[^\s,\"']\"/, "string"],
 
-        // Label definitions: label $name:
-        [/\blabel\s+\$\w+:/, "annotation"],
-
         // Label references: $name
         [/\$\w+/, "identifier"],
 
-        // Macro parameters (inside define ... end)
-        // Not handled separately, but could be added if needed
-
-        // Fallback
-        [/[ \t\r\n]+/, "white"],
+        [/[,:]/, "delimiter"],
+        [/\s+/, "white"],
       ],
     },
   });
   editor.defineTheme("darkgreen", {
-    base: "hc-black",
+    base: "vs-dark",
     inherit: true,
     rules: [
+      { token: "comment", fontStyle: "italic" },
       {
-        token: "comment",
-        foreground: "",
+        token: "keyword",
+        foreground: "#00BB00",
+        fontStyle: "bold",
       },
+      {
+        token: "identifier",
+        foreground: "#00BB88",
+      },
+      { token: "variable.predefined", foreground: "#5588BB" },
+      { token: "string", foreground: "#5080FB" },
+      { token: "number.binary", foreground: "#bbbbbb" },
+
+      { token: "keyword.cond", foreground: "#88BB00" },
+      { token: "keyword.io", foreground: "#00BB33" },
     ],
+    colors: {
+      "editor.foreground": "#00FF00", // Set foreground color to green
+      "editor.background": "#000000", // Set background color to black
+      "editor.lineHighlightBackground": "#333333", // Highlight current line
+      "editorCursor.foreground": "#00FF00", // Cursor color
+    },
   });
 }

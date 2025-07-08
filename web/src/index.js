@@ -27,10 +27,10 @@ const RAMEl = document.getElementById("ram");
 const stackEl = document.getElementById("stack");
 const selector = document.getElementById("demos");
 const assemblyEditor = editor.create(disasmEl, {
-  value: "",
+  value: localStorage.getItem("program")||"",
   language: "mini-8",
   automaticLayout: true,
-  theme: "vs-dark",
+  theme: "darkgreen",
 });
 assemblyEditor.getValue()
 const assemblyModel=assemblyEditor.getModel()
@@ -38,9 +38,7 @@ assemblyModel.onDidChangeContent((e)=>{
     localStorage.setItem("program",assemblyEditor.getValue())
 })
 
-if (localStorage.getItem("program") !== null) {
-    assemblyEditor.setValue(localStorage.getItem("program"))
-}
+
 selector.addEventListener("input", async () => {
   const value = selector.value;
   if (value) {
