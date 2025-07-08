@@ -1,12 +1,22 @@
-; This version treats 1 as a prime number, which is not technically correct,
-; but avoids having to program in a special case for 1.
+; 1 isn't prime or composite, so handle that before doing anything else.
+WRT "N", 0b00
+WRT ":", 0b00
+WRT "1", 0b00
 
-MOV 1, r0 ; r0 is our number
+MOV 2, r0 ; r0 is our number
 
 label $outerloop:
     MOV 2, r1 ; start divisor at 2
-    AND r0, 0xFE, r3
+    AND r0, 0xFE, r3 ;Mask and rotate for div2 (eq. SHR)
     ROR r3, 1, r3 ; r3 = r0 / 2
+    JGT r3, 16, $clamp ; The sqrt of 255 is ~= 15.96, so the maximum factor that needs to be checked is 15, 16 to be safe
+    ; We can cut out a ton of work by clamping that, and it's really easy to implement.
+    ; In essence, this makes all prime factoring operations take roughly the same amount of time as checking that 31 is prime
+    ; As > 32, n/2 >=16, so it'll get clamped.
+    ; This optimization only works for 8-bit numbers, but that's fine, as I only work with 8 bit uints.
+    JMP $innerloop
+label $clamp
+    MOV 16, r3
 
 label $innerloop:
 
