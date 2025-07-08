@@ -1,4 +1,4 @@
-export class MiniMachineVM {
+export default class MiniMachineVM {
   constructor(program, { printOutput, outputEl } = {}) {
     this.utf8Decoder = new TextDecoder("utf-8", { fatal: true });
     this.utf8Buffer = [];

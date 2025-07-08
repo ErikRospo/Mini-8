@@ -1,12 +1,25 @@
-import { MiniMachineVM } from "./vm.js";
-import { assemble } from "./assembler.js";
+import MiniMachineVM from "./vm.js";
+import { assembleFromLines } from "./assembler.js";
 import editorinit from "./editor.js";
 import { editor } from "monaco-editor";
 editorinit();
 let interval = null;
+/**
+ * @type {MiniMachineVM|null}
+ * The MiniMachineVM instance that runs the Mini-8 code.
+ */
 let vm = null;
 
 let lineToPCMap = {};
+
+function linenumberFunc(line) {
+  // Convert line number to PC (program counter)
+  if (line < 0) return 0;
+  if (lineToPCMap[line] === undefined) {
+    return linenumberFunc(line - 1);
+  }
+  return (lineToPCMap[line] || 0).toString(16).padStart(2, "0").toUpperCase();
+}
 // Keep track of previous register values
 const previousRegs = {};
 
@@ -27,17 +40,20 @@ const RAMEl = document.getElementById("ram");
 const stackEl = document.getElementById("stack");
 const selector = document.getElementById("demos");
 const assemblyEditor = editor.create(disasmEl, {
-  value: localStorage.getItem("program")||"",
+  value: localStorage.getItem("program") || "",
   language: "mini-8",
   automaticLayout: true,
   theme: "darkgreen",
+  lineNumbers: linenumberFunc,
 });
-assemblyEditor.getValue()
-const assemblyModel=assemblyEditor.getModel()
-assemblyModel.onDidChangeContent((e)=>{
-    localStorage.setItem("program",assemblyEditor.getValue())
-})
-
+lineToPCMap = assembleFromLines(
+  assemblyEditor.getValue().split("\n")
+).origLineToPc;
+const assemblyModel = assemblyEditor.getModel();
+assemblyModel.onDidChangeContent((e) => {
+  localStorage.setItem("program", assemblyEditor.getValue());
+  // Update the disassembly view
+});
 
 selector.addEventListener("input", async () => {
   const value = selector.value;
@@ -54,7 +70,7 @@ selector.addEventListener("input", async () => {
       outputEl.classList.remove("output-error");
     }
     const program = await response.text();
-    disasmEl.innerText = program;
+    assemblyEditor.setValue(program);
     vm = null;
     render();
   }
@@ -121,7 +137,11 @@ loadBtn.addEventListener("click", () => {
 });
 assembleBtn.addEventListener("click", () => {
   try {
-    lineToPCMap = assemble();
+    let { hex, origLineToPc } = assembleFromLines(
+      assemblyEditor.getValue().split("\n")
+    );
+    rawCodeInput.value = hex;
+    lineToPCMap = origLineToPc;
   } catch (error) {
     outputEl.innerText = error.message;
     outputEl.classList.add("output-error");
@@ -131,23 +151,7 @@ assembleBtn.addEventListener("click", () => {
     outputEl.innerText = "";
     outputEl.classList.remove("output-error");
   }
-
-  const disasmEl = document.getElementById("disasm");
-  const lines = disasmEl.innerText.split("\n");
-  disasmEl.innerHTML = "";
-  let pc = 0;
-  for (let i = 0; i < lines.length; i++) {
-    pc = lineToPCMap[i] || pc;
-    const lineEl = document.createElement("div");
-    lineEl.className = "dis-line";
-    lineEl.dataset.pc = fpc(pc);
-    if (lines[i] === "") {
-      continue;
-    }
-    lineEl.textContent = lines[i];
-    lineEl.style = `--line-num:${pc}`;
-    disasmEl.appendChild(lineEl);
-  }
+  vm = null; // Reset VM when code changes
 });
 
 fileInput.addEventListener("change", (e) => {
@@ -241,36 +245,34 @@ function fpc(pc) {
   return pc.toString(16).padStart(2, "0");
 }
 function updateDisassembly(currentPC = null) {
-  const bytes = rawCodeInput.value
+  // Get the code from the Monaco editor
+  const code = rawCodeInput.value
     .trim()
     .split(/\s+/)
     .map((b) => parseInt(b, 16) || 0);
-
-  disasmEl.innerHTML = "";
-
-  let pc = 0;
-
-  for (let i = 0; i + 3 < bytes.length; i += 4, pc++) {
-    const instr = bytes.slice(i, i + 4);
-    const dis = MiniMachineVM.prototype.disassemble(...instr);
-
-    const lineEl = document.createElement("div");
-    lineEl.className = "dis-line";
-    lineEl.dataset.pc = fpc(pc);
-    lineEl.textContent = dis;
-    lineEl.style = `--line-num:${pc}`;
-
-    disasmEl.appendChild(lineEl);
+  if (!vm) {
+    vm = new MiniMachineVM(new Uint8Array(code), {
+      printOutput,
+      outputEl,
+    });
   }
+  let disassembly = "";
+  let disasmLine = "";
+  for (let i = 0; i < code.length; i += 4) {
+    const instruction = code.slice(i, i + 4);
+    disasmLine = vm.disassemble(
+      instruction[0],
+      instruction[1],
+      instruction[2],
+      instruction[3]
+    );
+    lineToPCMap[i / 4] = i/4; // Map line number to PC
+    disassembly += disasmLine + "\n";
+  }
+  assemblyEditor.setValue(disassembly);
 }
-
 function highlightCurrentPC(pc) {
-  document
-    .querySelectorAll(".current-pc")
-    .forEach((el) => el.classList.remove("current-pc"));
-  document
-    .querySelectorAll(`[data-pc='${fpc(pc)}']`)
-    .forEach((el) => el.classList.add("current-pc"));
+    
 }
 
 function render() {

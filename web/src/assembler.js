@@ -102,6 +102,7 @@ export function assembleFromLines(lines) {
   for (let i = 0; i < lines.length; ) {
     let line = lines[i].split(";")[0].trim();
     if (!line) {
+      origLineToPc[i] = pc;
       i++;
       continue;
     }
@@ -145,8 +146,10 @@ export function assembleFromLines(lines) {
         line = m[2];
       }
 
-      if (!line.trim()) continue;
-
+      if (!line.trim()) {
+        origLineToPc[origLine] = pc; 
+        continue;
+      }
       const tokens = line.trim().split(/[,\s]+/);
       const mnemonic = tokens[0].toUpperCase();
 
