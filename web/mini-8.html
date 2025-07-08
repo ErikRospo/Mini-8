@@ -290,6 +290,8 @@
     <script>
       class MiniMachineVM {
         constructor(program) {
+          this.utf8Decoder = new TextDecoder("utf-8");
+          this.utf8Buffer = [];
           this.reg = new Array(8).fill(0); // r0-r7
           this.ram = new Array(256).fill(0);
           this.stack = [];
@@ -336,22 +338,37 @@
         }
 
         wrt(val, fmt) {
-          let ch = "";
           switch (fmt) {
             case 0:
-              ch = val === 0 ? "\x00" : String.fromCharCode(val);
+              handleUtf8Byte(val);
               break;
             case 1:
-              ch = val <= 9 ? val.toString() : "?";
+              printOutput(val <= 9 ? val.toString() : "?");
               break;
             case 2:
-              ch = val <= 25 ? String.fromCharCode(65 + val) : "?";
+              printOutput(val <= 25 ? String.fromCharCode(65 + val) : "?");
               break;
             case 3:
-              ch = val <= 15 ? val.toString(16).toUpperCase() : "?";
+              printOutput(val <= 15 ? val.toString(16).toUpperCase() : "?");
               break;
           }
-          printOutput(ch);
+        }
+        handleUtf8Byte(byte) {
+          if (byte === 0x00) {
+            outputEl.innerText = "";
+            utf8Buffer.length = 0;
+            return;
+          }
+
+          utf8Buffer.push(byte);
+
+          try {
+            const decoded = utf8Decoder.decode(new Uint8Array(utf8Buffer));
+            printOutput(decoded);
+            utf8Buffer.length = 0; // clear buffer after successful decode
+          } catch (e) {
+            // Incomplete UTF-8 sequence — keep buffering
+          }
         }
 
         execute(instr) {
@@ -604,8 +621,8 @@
               let modeComment = "";
               if (imm1) {
                 if (fmt === 0) {
-                  // ASC
-                  modeComment = "; ASC";
+                  // UTF-8
+                  modeComment = "; UTF-8";
                   if (op1 === 0) {
                     op1Str = "0x00";
                   } else if (
@@ -640,7 +657,7 @@
                 }
               } else {
                 op1Str = regName(op1);
-                if (fmt === 0) modeComment = "; ASC";
+                if (fmt === 0) modeComment = "; UTF8";
                 else if (fmt === 1) modeComment = "; DEC";
                 else if (fmt === 2) modeComment = "; ALP";
                 else if (fmt === 3) modeComment = "; HEX";
@@ -935,11 +952,7 @@
         });
       render();
       function printOutput(output) {
-        if (output === "\x00") {
-          outputEl.innerText = "";
-        } else {
-          outputEl.innerText += output;
-        }
+        outputEl.innerText += output;
       }
       documentationButton.addEventListener("click", () => {
         window.open("/Mini-8/ISA");

@@ -224,11 +224,11 @@ class MiniMachineVM:
             return
 
     def wrt(self, val, fmt):
-        if fmt == 0:  # ASCII
+        if fmt == 0:  # UTF-8
             if val == 0:
                 self.term_buffer = ""
                 print("\033c", end="")  # clear terminal
-            elif val <= 0x7F:
+            else:
                 print(chr(val), end="")
         elif fmt == 1:  # Decimal
             if val <= 9:

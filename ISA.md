@@ -71,7 +71,7 @@ OP2 specifies the format to use for the output, and is a 2-bit value:
 
 | Format      | OP2 Value | Description                                                                  | Max Supported Value |
 | :---------- | :-------- | ---------------------------------------------------------------------------- | ------------------- |
-| ASCII       | `00`      | ASCII character output (default)                                             | `0x7F` (DEL)        |
+| UTF-8       | `00`      | UTF-8 character output (default)                                             | `0xFF`              |
 | Decimal     | `01`      | Unsigned decimal output (e.g. `0x00` is `0`, `0x09` is `9`)                  | `0x09` (9)          |
 | Alphabetic  | `10`      | Alphabetic output, indexed by OP1 (`0` is `A`, `1` is `B`, ..., `25` is `Z`) | `0x19` (25, `Z`)    |
 | Hexadecimal | `11`      | Hexadecimal output (e.g. `0x0` is `0`, `0x2` is `2`, `0xF` is `F`)           | `0x0F` (16)         |
@@ -80,7 +80,9 @@ Calling `WRT` with an immediate value greater than the maximum supported value f
 
 Both formats Alphabetic and Hexadecimal (`10` and `11`) SHOULD output uppercase letters.
 
-Calling `WRT` in ASCII format with an immediate value of `0x00` will clear the terminal.
+Calling `WRT` in UTF-8 format with an immediate value of `0x00` will clear the terminal.
+
+Implementations SHOULD support UTF-8, but MAY use ASCII if it is infeasable to implement UTF-8. If they do, the maximum supported value should be `0x7f`, DEL. Values higher than this should be replaced with `?`, as usual. 
 
 #### Jump Instructions
 
