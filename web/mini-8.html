@@ -292,7 +292,7 @@
     <script>
       class MiniMachineVM {
         constructor(program) {
-          this.utf8Decoder = new TextDecoder("utf-8",{fatal:true});
+          this.utf8Decoder = new TextDecoder("utf-8", { fatal: true });
           this.utf8Buffer = [];
           this.reg = new Array(8).fill(0); // r0-r7
           this.ram = new Array(256).fill(0);
@@ -365,7 +365,9 @@
           this.utf8Buffer.push(byte);
 
           try {
-            const decoded = this.utf8Decoder.decode(new Uint8Array(this.utf8Buffer));
+            const decoded = this.utf8Decoder.decode(
+              new Uint8Array(this.utf8Buffer)
+            );
             printOutput(decoded);
             this.utf8Buffer.length = 0; // clear buffer after successful decode
           } catch (e) {
@@ -732,8 +734,10 @@
           return c & 0xff;
         }
         if (/^['"](.{1})['"]$/.test(val)) return val.charCodeAt(1) & 0xff;
-        if (val.startsWith("0x")) return parseInt(val.replace("0x", ""), 16) & 0xff;
-        if (val.startsWith("0b")) return parseInt(val.replace("0b", ""), 2) & 0xff;
+        if (val.startsWith("0x"))
+          return parseInt(val.replace("0x", ""), 16) & 0xff;
+        if (val.startsWith("0b"))
+          return parseInt(val.replace("0b", ""), 2) & 0xff;
         if (/^\d+$/.test(val)) return parseInt(val, 10) & 0xff;
         throw new Error("Unknown value: " + val);
       }
@@ -756,9 +760,7 @@
 
       function encodeOperand(val, constants) {
         if (!val) return 0;
-        return isRegister(val)
-          ? REGISTERS[val]
-          : parseValue(val, constants);
+        return isRegister(val) ? REGISTERS[val] : parseValue(val, constants);
       }
 
       function handleShorthand(op, args) {
@@ -855,7 +857,7 @@
                 unresolved.push([output.length, i, args[i].slice(1)]);
                 args[i] = "0";
               }
-              if (args[i] in constants){
+              if (args[i] in constants) {
                 args[i] = constants[args[i]];
               }
             }
@@ -945,8 +947,13 @@
           // Fetch and inject the demo content into the container
           const response = await fetch(`./demos/${value}.m8a`);
           if (!response.ok) {
-            alert(`The demo ${value} could not be loaded`);
+            outputEl.innerText = `Error loading demo "${value}": ${response.status} ${response.statusText}`;
+            outputEl.classList.add("output-error");
             return;
+          }
+          if (outputEl.classList.contains("output-error")) {
+            outputEl.innerText = "";
+            outputEl.classList.remove("output-error");
           }
           const program = await response.text();
           disasmEl.innerText = program;
