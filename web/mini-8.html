@@ -290,7 +290,7 @@
     <script>
       class MiniMachineVM {
         constructor(program) {
-          this.utf8Decoder = new TextDecoder("utf-8");
+          this.utf8Decoder = new TextDecoder("utf-8",{fatal:true});
           this.utf8Buffer = [];
           this.reg = new Array(8).fill(0); // r0-r7
           this.ram = new Array(256).fill(0);
