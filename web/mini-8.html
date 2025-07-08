@@ -145,6 +145,12 @@
         overflow-y: scroll;
       }
 
+      #output.output-error {
+        color:#f00;
+        font-weight: bold;
+      }
+
+
       #ram {
         min-height: 90px;
         overflow-x: auto;
@@ -253,7 +259,6 @@
           <option value="sorting">Bubblesort</option>
           <option value="primes">Primes</option>
           <option value="multiplication">Multiplication Table</option>
-
         </select>
       </div>
     </div>
@@ -933,6 +938,7 @@
           vm = null;
         }
         outputEl.innerText = "";
+        outputEl.classList.remove("output-error");
         RAMEl.innerText = "";
         stackEl.innerText = "";
         render();
@@ -953,7 +959,18 @@
         fileInput.click();
       });
       assembleBtn.addEventListener("click", () => {
-        lineToPCMap = assemble();
+        try {
+          lineToPCMap = assemble();
+        } catch (error) {
+          outputEl.innerText = error.message;
+          outputEl.classList.add("output-error");
+          return;
+        }
+        if (outputEl.classList.contains("output-error")){
+          outputEl.innerText=""
+          outputEl.classList.remove("output-error");
+        }
+
         const disasmEl = document.getElementById("disasm");
         const lines = disasmEl.innerText.split("\n");
         disasmEl.innerHTML = "";
