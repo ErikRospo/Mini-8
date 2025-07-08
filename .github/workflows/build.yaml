@@ -32,16 +32,16 @@ jobs:
       - name: Convert ISA document
         run: pandoc ISA.md --from gfm -o web/public/ISA.html -s --template=./template/ISA-template.html
 
-
       - name: Copy demos
         run: cp programs/ web/public/demos -r
+      
+      - run: rm web/public/.gitkeep
 
       - name: Install dependencies
         run: cd web && npm install
 
       - name: Build
         run: cd web && npm run build
-
 
       - name: Upload artifact
         with:
