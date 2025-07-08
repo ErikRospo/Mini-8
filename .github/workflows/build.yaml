@@ -33,6 +33,9 @@ jobs:
         run: pandoc ISA.md --from gfm -o web/public/ISA.html -s --template=./template/ISA-template.html
 
 
+      - name: Copy demos
+        run: cp programs/ web/public/demos -r
+
       - name: Install dependencies
         run: cd web && npm install
 
