@@ -254,6 +254,8 @@
           <option value="fibonacci-hex">Fibonacci Numbers (hex)</option>
           <option value="fibonacci-dec">Fibonacci Numbers (dec)</option>
           <option value="bincount">Binary Counter</option>
+          <option value="checkerboard">Checkerboard (utf-8)</option>
+          <option value="checkerboard-ascii">Checkerboard (ascii)</option>
           <option value="fizzbuzz">FizzBuzz</option>
           <option value="sorting">Bubblesort</option>
           <option value="primes">Primes</option>
@@ -724,11 +726,15 @@
 
       function parseValue(val, constants) {
         val = val.trim();
-        if (val in constants) return constants[val];
-        if (/^['"](.{1})['"]$/.test(val)) return val.charCodeAt(1);
-        if (val.startsWith("0x")) return parseInt(val.replace("0x", ""), 16);
-        if (val.startsWith("0b")) return parseInt(val.replace("0b", ""), 2);
-        if (/^\d+$/.test(val)) return parseInt(val, 10);
+        if (val in constants) {
+          const c = constants[val];
+          if (isRegister(c)) return REGISTERS[c];
+          return c & 0xff;
+        }
+        if (/^['"](.{1})['"]$/.test(val)) return val.charCodeAt(1) & 0xff;
+        if (val.startsWith("0x")) return parseInt(val.replace("0x", ""), 16) & 0xff;
+        if (val.startsWith("0b")) return parseInt(val.replace("0b", ""), 2) & 0xff;
+        if (/^\d+$/.test(val)) return parseInt(val, 10) & 0xff;
         throw new Error("Unknown value: " + val);
       }
 
@@ -752,7 +758,7 @@
         if (!val) return 0;
         return isRegister(val)
           ? REGISTERS[val]
-          : parseValue(val, constants) & 0xff;
+          : parseValue(val, constants);
       }
 
       function handleShorthand(op, args) {
@@ -796,7 +802,7 @@
             const [_, name, body] = defineMatch;
             try {
               if (body && isRegister(body.trim())) {
-                constants[name] = REGISTERS[body.trim()];
+                constants[name] = body.trim();
               } else {
                 constants[name] = parseValue(body, constants);
               }
@@ -848,6 +854,9 @@
               else if (args[i]?.startsWith("$")) {
                 unresolved.push([output.length, i, args[i].slice(1)]);
                 args[i] = "0";
+              }
+              if (args[i] in constants){
+                args[i] = constants[args[i]];
               }
             }
 

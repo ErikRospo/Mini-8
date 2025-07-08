@@ -1,0 +1,29 @@
+define ROWCOUNTER r0
+define COLCOUNTER r1
+
+MOV 8, ROWCOUNTER
+label $rowloop
+MOV 8, COLCOUNTER
+
+label $colloop
+    ADD ROWCOUNTER, COLCOUNTER, r2
+    AND r2, 1, r2
+    JEQ r2, 1, $empty_print
+label $block_print
+    WRT "#"
+    WRT "#"
+
+    ;2, as characters are about twice as tall as they are wide
+    JMP $done_print
+label $empty_print
+    WRT 0x20 ;Space
+    WRT 0x20 ;Space
+
+label $done_print
+    SUB COLCOUNTER, 1, COLCOUNTER
+    JNE COLCOUNTER, 0, $colloop
+    WRT 10 ;newline
+    SUB ROWCOUNTER, 1, ROWCOUNTER
+    JNE ROWCOUNTER, 0, $rowloop
+
+HCF
