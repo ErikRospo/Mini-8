@@ -340,7 +340,7 @@
         wrt(val, fmt) {
           switch (fmt) {
             case 0:
-              handleUtf8Byte(val);
+              this.handleUtf8Byte(val);
               break;
             case 1:
               printOutput(val <= 9 ? val.toString() : "?");
@@ -356,16 +356,16 @@
         handleUtf8Byte(byte) {
           if (byte === 0x00) {
             outputEl.innerText = "";
-            utf8Buffer.length = 0;
+            this.utf8Buffer.length = 0;
             return;
           }
 
-          utf8Buffer.push(byte);
+          this.utf8Buffer.push(byte);
 
           try {
-            const decoded = utf8Decoder.decode(new Uint8Array(utf8Buffer));
+            const decoded = this.utf8Decoder.decode(new Uint8Array(this.utf8Buffer));
             printOutput(decoded);
-            utf8Buffer.length = 0; // clear buffer after successful decode
+            this.utf8Buffer.length = 0; // clear buffer after successful decode
           } catch (e) {
             // Incomplete UTF-8 sequence — keep buffering
           }
