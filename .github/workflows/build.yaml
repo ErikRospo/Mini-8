@@ -30,6 +30,8 @@ jobs:
 
       - name: Convert ISA document
         run: pandoc ISA.md --from gfm -o web/public/ISA.html -s --template=./template/ISA-template.html
+        
+      - run: cd web
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -37,14 +39,13 @@ jobs:
           node-version: lts/*
           cache: 'npm'
 
-      - run: cd web
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build
         run: npm run build
-        
+
       - run: cd ..
 
 
