@@ -1,0 +1,74 @@
+JMP $main
+label $decprint:
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    MOV 0, r2
+    
+label $hundreds_loop
+    JLT r0, 100, $after_hundreds
+    SUB r0, 100, r0
+    ADD r2, 1, r2
+    JMP $hundreds_loop
+
+label $after_hundreds
+    WRT r2, 0b01 ; DEC output
+
+    MOV 0, r2
+
+label $tens_loop
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    ADD r2, 1, r2
+    JMP $tens_loop
+
+label $after_tens
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0
+    POP r1
+    POP r2
+    POP r7 ; RET 
+
+label $binprint:
+    PUSH r1
+    PUSH r2
+    PUSH r3
+
+    MOV 8, r1         ; bit count
+    MOV 0b10000000, r2 ; start with MSB mask
+
+label $bit_loop:
+    AND r0, r2, r3    ; isolate current bit
+    JNE r3, 0, $bit_one
+    MOV 0, r3         ; ASCII '0'
+    JMP $bit_out
+
+label $bit_one:
+    MOV 1, r3         ; ASCII '1'
+
+label $bit_out:
+    WRT r3, 0b01      ; write character 
+    ROR r2, 1, r2     ; shift mask right
+    SUB r1, 1, r1
+    JNE r1, 0, $bit_loop
+
+    POP r3
+    POP r2
+    POP r1
+    POP r7            ; RET
+
+label $main:
+    MOV 0, r0
+
+label $mainloop
+    CALL $decprint
+    WRT ":", 0b00
+    WRT 32, 0b00
+    CALL $binprint
+    WRT 10, 0b00
+    ADD r0, 1, r0
+    JNE r0, 0, $mainloop ; If we've overflowed, we went past 256, exit
+    HCF
