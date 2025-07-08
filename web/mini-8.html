@@ -939,7 +939,7 @@
       window.addEventListener("onreload", () => {
         localStorage.setItem("program", disasmEl.innerHTML);
       });
-      selector.addEventListener("change", async () => {
+      selector.addEventListener("input", async () => {
         const value = selector.value;
         if (value) {
           // Fetch and inject the demo content into the container
