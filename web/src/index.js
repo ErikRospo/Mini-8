@@ -1,6 +1,8 @@
 import { MiniMachineVM } from "./vm.js";
 import { assemble } from "./assembler.js";
-
+import editorinit from "./editor.js";
+import { editor } from "monaco-editor";
+editorinit();
 let interval = null;
 let vm = null;
 
@@ -24,15 +26,21 @@ const outputEl = document.getElementById("output");
 const RAMEl = document.getElementById("ram");
 const stackEl = document.getElementById("stack");
 const selector = document.getElementById("demos");
+const assemblyEditor = editor.create(disasmEl, {
+  value: "",
+  language: "mini-8",
+  automaticLayout: true,
+  theme: "vs-dark",
+});
+assemblyEditor.getValue()
+const assemblyModel=assemblyEditor.getModel()
+assemblyModel.onDidChangeContent((e)=>{
+    localStorage.setItem("program",assemblyEditor.getValue())
+})
+
 if (localStorage.getItem("program") !== null) {
-  disasmEl.innerHTML = localStorage.getItem("program");
+    assemblyEditor.setValue(localStorage.getItem("program"))
 }
-window.addEventListener("onbeforeunload", () => {
-  localStorage.setItem("program", disasmEl.innerHTML);
-});
-window.addEventListener("onreload", () => {
-  localStorage.setItem("program", disasmEl.innerHTML);
-});
 selector.addEventListener("input", async () => {
   const value = selector.value;
   if (value) {

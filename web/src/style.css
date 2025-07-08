@@ -165,45 +165,9 @@ option {
   overflow-y: auto;
   outline: none;
 }
-
-.disasm-editor {
-  background: #000;
-  color: #0f0;
-  border: 1px solid #0f0;
-  padding: 10px;
-  font-family: monospace;
-  white-space: pre;
-  min-height: 300px;
+#disasm {
+  min-height: 600px;
   overflow-y: auto;
-  outline: none;
-}
-
-.disasm-editor .dis-line {
-  position: relative;
-  padding-left: 2em;
-  white-space: pre;
-  display: block;
-}
-
-.disasm-editor .dis-line::before {
-  content: attr(data-pc);
-  position: absolute;
-  left: 0;
-  color: #0f0;
-  opacity: 0.5;
-  pointer-events: none;
-  user-select: none;
-}
-
-.disasm-editor .current-pc {
-  background-color: #0f0;
-  color: #111;
-  font-weight: bold;
-}
-
-.disasm-editor .current-pc.dis-line::before {
-  color: #000;
-  font-weight: bold;
 }
 
 .dis-line {
