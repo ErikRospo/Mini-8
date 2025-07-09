@@ -26,10 +26,12 @@
 
         <button id="documentation">Documentation/ISA</button>
         <button id="reset">Reset VM</button>
-
+        <br />
+        <label for="scrollPC">Scroll to PC:</label>
+        <input type="checkbox" id="scrollPC" />
         <label for="vmSpeed">Speed (ms per step):</label>
         <input type="number" id="vmSpeed" value="1000" min="50" step="50" />
-        <label for="demos">Select Demo</label>
+        <label for="demos">Select Demo:</label>
         <select id="demos">
           <option value="hello-world">Hello, World!</option>
           <option value="fibonacci-hex">Fibonacci Numbers (hex)</option>

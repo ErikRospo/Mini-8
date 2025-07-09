@@ -48,6 +48,13 @@ const outputEl = document.getElementById("output");
 const RAMEl = document.getElementById("ram");
 const stackEl = document.getElementById("stack");
 const selector = document.getElementById("demos");
+
+const scrollPCCheckbox = document.getElementById("scrollPC");
+
+
+
+
+
 const assemblyEditor = editor.create(disasmEl, {
   value: localStorage.getItem("program") || "",
   language: "mini-8",
@@ -281,6 +288,9 @@ function highlightCurrentPC(pc) {
     // Remove previous decorations
     decorations.clear();
 
+    if (pc === null || pc === undefined) return; // No PC to highlight
+
+
     // Find all line numbers whose mapped PC (using linenumberFunc logic) matches the current PC
     const lines = [];
     let lastPC = 0;
@@ -306,6 +316,13 @@ function highlightCurrentPC(pc) {
     }));
 
     decorations.set(newDecorations);
+
+    if (scrollPCCheckbox.checked) {
+        // Scroll to the first highlighted line
+        const firstLine = lines[0];
+        const lastLine = lines[lines.length - 1];
+        assemblyEditor.revealLinesInCenterIfOutsideViewport(firstLine, lastLine, monaco.editor.ScrollType.Smooth);
+    }
 }
 
 function render() {

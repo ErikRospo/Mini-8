@@ -186,3 +186,18 @@ option {
   margin-left: 3px;
   width: 5px !important
 }
+
+#scrollPC {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: #222;
+  width: 15px;
+  height: 15px;
+  border: 1px solid #0f0;
+  cursor: pointer;
+  padding: 0px;
+}
+#scrollPC:checked {
+  background: #0f0;
+}
