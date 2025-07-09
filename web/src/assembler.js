@@ -102,7 +102,7 @@ export function assembleFromLines(lines) {
   for (let i = 0; i < lines.length; ) {
     let line = lines[i].split(";")[0].trim();
     if (!line) {
-      origLineToPc[i] = pc;
+      // origLineToPc[i] = pc;
       i++;
       continue;
     }

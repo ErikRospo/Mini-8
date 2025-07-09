@@ -2,7 +2,7 @@ import MiniMachineVM from "./vm.js";
 import { assembleFromLines } from "./assembler.js";
 import editorinit from "./editor.js";
 import { editor } from "monaco-editor";
-import * as monaco from "monaco-editor"
+import * as monaco from "monaco-editor";
 editorinit();
 let interval = null;
 /**
@@ -12,14 +12,22 @@ let interval = null;
 let vm = null;
 
 let lineToPCMap = {};
-
+/**
+ * Convert a line number to its corresponding PC (program counter) value.
+ * @param {number} line
+ * @returns {string}
+ */
 function linenumberFunc(line) {
   // Convert line number to PC (program counter)
   if (line < 0) return 0;
-  if (lineToPCMap[line] === undefined) {
-    return ""
+  if (lineToPCMap[line - 1] === undefined) {
+    // return ""
+    return linenumberFunc(line - 1); // Fallback to previous line if not found
   }
-  return (lineToPCMap[line] || 0).toString(16).padStart(2, "0").toUpperCase();
+  return (lineToPCMap[line - 1] || 0)
+    .toString(16)
+    .padStart(2, "0")
+    .toUpperCase();
 }
 // Keep track of previous register values
 const previousRegs = {};
@@ -242,9 +250,6 @@ function loadVMFromRaw() {
   });
   render();
 }
-function fpc(pc) {
-  return pc.toString(16).padStart(2, "0");
-}
 function updateDisassembly(currentPC = null) {
   // Get the code from the Monaco editor
   const code = rawCodeInput.value
@@ -267,7 +272,7 @@ function updateDisassembly(currentPC = null) {
       instruction[2],
       instruction[3]
     );
-    lineToPCMap[i / 4] = i/4; // Map line number to PC
+    lineToPCMap[i / 4] = i / 4; // Map line number to PC
     disassembly += disasmLine + "\n";
   }
   assemblyEditor.setValue(disassembly);
@@ -276,17 +281,28 @@ function highlightCurrentPC(pc) {
     // Remove previous decorations
     decorations.clear();
 
-    // Find all line numbers that map to this PC
-    const lines = Object.entries(lineToPCMap)
-        .filter(([line, mappedPC]) => mappedPC === pc)
-        .map(([line]) => parseInt(line, 10) + 1); // Monaco lines are 1-based
+    // Find all line numbers whose mapped PC (using linenumberFunc logic) matches the current PC
+    const lines = [];
+    let lastPC = 0;
+    for (let line = 0; line < assemblyEditor.getModel().getLineCount(); line++) {
+        let mappedPC;
+        if (lineToPCMap[line] !== undefined) {
+            mappedPC = lineToPCMap[line];
+            lastPC = mappedPC;
+        } else {
+            mappedPC = lastPC;
+        }
+        if (mappedPC === pc) {
+            lines.push(line + 1); // Monaco lines are 1-based
+        }
+    }
 
     if (lines.length === 0) return;
 
     // Create decorations for each matching line
-    const newDecorations = lines.map(lineNumber => ({
+    const newDecorations = lines.map((lineNumber) => ({
         range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-        options: { isWholeLine: true, linesDecorationsClassName: "current-pc" }
+        options: { isWholeLine: true, linesDecorationsClassName: "current-pc" },
     }));
 
     decorations.set(newDecorations);
