@@ -81,6 +81,8 @@ export default function init_mini8() {
       "editor.background": "#000000", // Set background color to black
       "editor.lineHighlightBackground": "#333333", // Highlight current line
       "editorCursor.foreground": "#00FF00", // Cursor color
+      "editorInlayHint.background": "#000000", // Inlay hint background
+      "editorInlayHint.foreground": "#006000", // Inlay hint text
     },
   });
 
