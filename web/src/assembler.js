@@ -1,4 +1,4 @@
-const OPCODES = {
+export const OPCODES = {
   AND: ["ALU", 0b000],
   ROR: ["ALU", 0b001],
   ADD: ["ALU", 0b010],
@@ -25,9 +25,9 @@ const OPCODES = {
   HCF: ["IO", 0b111],
 };
 
-const OPCLASS = { ALU: 0b00, COND: 0b01, IO: 0b10 };
+export const OPCLASS = { ALU: 0b00, COND: 0b01, IO: 0b10 };
 
-const REGISTERS = {
+export const REGISTERS = {
   r0: 0,
   r1: 1,
   r2: 2,
@@ -41,7 +41,7 @@ const REGISTERS = {
   PC: 7,
 };
 
-function parseValue(val, constants) {
+export function parseValue(val, constants) {
   val = val.trim();
   if (val in constants) {
     const c = constants[val];
@@ -55,7 +55,7 @@ function parseValue(val, constants) {
   throw new Error("Unknown value: " + val);
 }
 
-function isRegister(val) {
+export function isRegister(val) {
   if (/^R[0-7]$/.test(val)) {
     throw new Error(
       `Register names must be lowercase (use "r${val[1]}" instead of "${val}")`
@@ -64,19 +64,19 @@ function isRegister(val) {
   return val in REGISTERS;
 }
 
-function encodeOpcode(mnemonic, op1, op2) {
+export function encodeOpcode(mnemonic, op1, op2) {
   let [cls, subtype] = OPCODES[mnemonic];
   let imm1 = op1 && !isRegister(op1) ? 1 : 0;
   let imm2 = op2 && !isRegister(op2) ? 1 : 0;
   return (imm1 << 6) | (imm2 << 5) | (OPCLASS[cls] << 3) | subtype;
 }
 
-function encodeOperand(val, constants) {
+export function encodeOperand(val, constants) {
   if (!val) return 0;
   return isRegister(val) ? REGISTERS[val] : parseValue(val, constants);
 }
 
-function handleShorthand(op, args) {
+export function handleShorthand(op, args) {
   args = [...args];
   if (op === "MOV" && args.length === 2) args.splice(1, 0, "0");
   else if (op === "HCF") args = ["0", "0", "0"];

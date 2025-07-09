@@ -1,4 +1,5 @@
 import { editor, languages } from "monaco-editor";
+import { OPCODES, REGISTERS,encodeOpcode,handleShorthand } from "./assembler";
 export default function init_mini8() {
   languages.register({ id: "mini-8" });
   languages.setMonarchTokensProvider("mini-8", {
@@ -82,4 +83,40 @@ export default function init_mini8() {
       "editorCursor.foreground": "#00FF00", // Cursor color
     },
   });
+
+  languages.registerCompletionItemProvider("mini-8", {
+    provideCompletionItems: () => {
+      const suggestions = [];
+      for (const [name, [opclass, code]] of Object.entries(OPCODES)) {
+        suggestions.push({
+          label: name,
+          kind: languages.CompletionItemKind.Function,
+          insertText: name,
+          insertTextRules:
+            languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          documentation: `Opcode ${name} (${opclass})`,
+        });
+      }
+      for (const [name, index] of Object.entries(REGISTERS)) {
+        suggestions.push({
+          label: name,
+          kind: languages.CompletionItemKind.Variable,
+          insertText: name,
+          insertTextRules:
+            languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          documentation: `Register ${name} (R${index})`,
+        });
+      }
+      suggestions.push({
+        label: "define",
+        kind: languages.CompletionItemKind.Keyword,
+        insertText: "define ${1:name} ${2:value}",
+        insertTextRules:
+          languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: "Define a constant",
+      });
+      return { suggestions };
+    },
+  });
+
 }
