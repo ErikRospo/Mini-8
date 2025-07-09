@@ -58,9 +58,18 @@ const assemblyEditor = editor.create(disasmEl, {
   theme: "darkgreen",
   lineNumbers: linenumberFunc,
 });
-lineToPCMap = assembleFromLines(
-  assemblyEditor.getValue().split("\n")
-).origLineToPc;
+try {
+  
+  lineToPCMap = assembleFromLines(
+    assemblyEditor.getValue().split("\n")
+  ).origLineToPc;
+  
+} catch (error) {
+  outputEl.innerText = error.message;
+  outputEl.classList.add("output-error");
+  console.error("Error assembling initial code:", error);
+  
+}
 const assemblyModel = assemblyEditor.getModel();
 assemblyModel.onDidChangeContent((e) => {
   localStorage.setItem("program", assemblyEditor.getValue());
