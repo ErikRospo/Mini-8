@@ -137,6 +137,32 @@ export default function init_mini8() {
         const hexMatch = line.match(/0x([0-9a-fA-F]+)/);
         if (hexMatch) {
           const hexValue = parseInt(hexMatch[1], 16);
+          if (isWRT && hexValue >= 0x20 && hexValue <= 0x7e) {
+            //This is probably a character that can't be represented in a char, for a WRT instruction.
+            //Instead of showing the raw value, we show the character
+            const charValue = String.fromCharCode(hexValue);
+            hints.push({
+              position: {
+                lineNumber: i + 1,
+                column: hexMatch.index + hexMatch[0].length + 1,
+              },
+              label: `: ${charValue}`,
+              kind: languages.InlayHintKind.Parameter,
+            });
+            continue;
+          }
+          if (hexValue == 10){
+            hints.push({
+              position: {
+                lineNumber: i + 1,
+                column: hexMatch.index + hexMatch[0].length + 1,
+              },
+              label: `: \\n`,
+              kind: languages.InlayHintKind.Parameter,
+            });
+            continue;
+          }
+
           if (hexValue < 10) {
             // You can parse hex values up to 10, right?
             continue;
