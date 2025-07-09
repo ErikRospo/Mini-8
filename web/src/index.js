@@ -85,6 +85,7 @@ selector.addEventListener("input", async () => {
     assemblyEditor.setValue(program);
     vm = null;
     render();
+    assemblyEditor.focus();
   }
 });
 document.getElementById("disassembleBtn").addEventListener("click", () => {
