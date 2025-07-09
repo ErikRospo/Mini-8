@@ -1,8 +1,34 @@
 import { editor, languages } from "monaco-editor";
 import { OPCLASS, OPCODES, REGISTERS } from "./assembler";
-export default function init_mini8() {
-  languages.register({ id: "mini-8" });
-  languages.setMonarchTokensProvider("mini-8", {
+
+// --- Constants ---
+const MINI8_LANGUAGE_ID = "mini-8";
+const FORMATTERS = ["utf", "dec", "alph", "hex"];
+const THEME_NAME = "darkgreen";
+const THEME_RULES = [
+  { token: "comment", fontStyle: "italic" },
+  { token: "keyword", foreground: "#00BB00", fontStyle: "bold" },
+  { token: "identifier", foreground: "#00BB88" },
+  { token: "variable.predefined", foreground: "#5588BB" },
+  { token: "string", foreground: "#5080FB" },
+  { token: "number.binary", foreground: "#bbbbbb" },
+  { token: "keyword.cond", foreground: "#88BB00" },
+  { token: "keyword.io", foreground: "#00BB33" },
+];
+// --- Theme Colors ---
+const THEME_COLORS = {
+  "editor.foreground": "#00FF00",
+  "editor.background": "#000000",
+  "editor.lineHighlightBackground": "#333333",
+  "editorCursor.foreground": "#00FF00",
+  "editorInlayHint.background": "#000000",
+  "editorInlayHint.foreground": "#006000",
+};
+
+// --- Language Definition ---
+function registerMini8Language() {
+  languages.register({ id: MINI8_LANGUAGE_ID });
+  languages.setMonarchTokensProvider(MINI8_LANGUAGE_ID, {
     defaultToken: "invalid",
     brackets: [],
     tokenizer: {
@@ -55,41 +81,24 @@ export default function init_mini8() {
       ],
     },
   });
-  editor.defineTheme("darkgreen", {
+}
+
+// --- Theme Definition ---
+function defineMini8Theme() {
+  editor.defineTheme(THEME_NAME, {
     base: "vs-dark",
     inherit: true,
-    rules: [
-      { token: "comment", fontStyle: "italic" },
-      {
-        token: "keyword",
-        foreground: "#00BB00",
-        fontStyle: "bold",
-      },
-      {
-        token: "identifier",
-        foreground: "#00BB88",
-      },
-      { token: "variable.predefined", foreground: "#5588BB" },
-      { token: "string", foreground: "#5080FB" },
-      { token: "number.binary", foreground: "#bbbbbb" },
-
-      { token: "keyword.cond", foreground: "#88BB00" },
-      { token: "keyword.io", foreground: "#00BB33" },
-    ],
-    colors: {
-      "editor.foreground": "#00FF00", // Set foreground color to green
-      "editor.background": "#000000", // Set background color to black
-      "editor.lineHighlightBackground": "#333333", // Highlight current line
-      "editorCursor.foreground": "#00FF00", // Cursor color
-      "editorInlayHint.background": "#000000", // Inlay hint background
-      "editorInlayHint.foreground": "#006000", // Inlay hint text
-    },
+    rules: THEME_RULES,
+    colors: THEME_COLORS,
   });
+}
 
-  languages.registerCompletionItemProvider("mini-8", {
+// --- Completion Provider ---
+function registerMini8CompletionProvider() {
+  languages.registerCompletionItemProvider(MINI8_LANGUAGE_ID, {
     provideCompletionItems: () => {
       const suggestions = [];
-      for (const [name, [opclass, code]] of Object.entries(OPCODES)) {
+      for (const [name, [opclass]] of Object.entries(OPCODES)) {
         suggestions.push({
           label: name,
           kind: languages.CompletionItemKind.Function,
@@ -119,7 +128,11 @@ export default function init_mini8() {
       return { suggestions };
     },
   });
-  languages.registerHoverProvider("mini-8", {
+}
+
+// --- Hover Provider ---
+function registerMini8HoverProvider() {
+  languages.registerHoverProvider(MINI8_LANGUAGE_ID, {
     provideHover: (model, position) => {
       const word = model.getWordAtPosition(position);
       if (!word) return null;
@@ -141,116 +154,117 @@ export default function init_mini8() {
             { value: `**Opcode:** ${token}` },
             { value: `**Class:** ${opclass}` },
             { value: `**Code:** ${codeval}` },
-            {
-              value: `**Mnemonic:** ${token} (${opclass})`,
-            },
+            { value: `**Mnemonic:** ${token} (${opclass})` },
           ],
         };
       }
     },
   });
-  languages.registerInlayHintsProvider("mini-8", {
+}
+
+// --- Inlay Hints Provider ---
+function parseHexHint(line, isWRT, i, hexMatch) {
+  const hexValue = parseInt(hexMatch[1], 16);
+  if (isWRT && hexValue >= 0x20 && hexValue <= 0x7e) {
+    return {
+      position: {
+        lineNumber: i + 1,
+        column: hexMatch.index + hexMatch[0].length + 1,
+      },
+      label: `: ${String.fromCharCode(hexValue)}`,
+      kind: languages.InlayHintKind.Parameter,
+    };
+  }
+  if (hexValue === 10) {
+    return {
+      position: {
+        lineNumber: i + 1,
+        column: hexMatch.index + hexMatch[0].length + 1,
+      },
+      label: `: \\n`,
+      kind: languages.InlayHintKind.Parameter,
+    };
+  }
+  if (hexValue < 10) return null;
+  return {
+    position: {
+      lineNumber: i + 1,
+      column: hexMatch.index + hexMatch[0].length + 1,
+    },
+    label: `: ${hexValue.toString()}`,
+    kind: languages.InlayHintKind.Parameter,
+  };
+}
+function parseBinHint(line, isWRT, i, binMatch) {
+  const binValue = parseInt(binMatch[1], 2);
+  if (isWRT && binValue < 4) {
+    return {
+      position: {
+        lineNumber: i + 1,
+        column: binMatch.index + binMatch[0].length + 1,
+      },
+      label: `: ${FORMATTERS[binValue]}`,
+      kind: languages.InlayHintKind.Parameter,
+    };
+  }
+  if (binValue < 2) return null;
+  return {
+    position: {
+      lineNumber: i + 1,
+      column: binMatch.index + binMatch[0].length + 1,
+    },
+    label: `: ${binValue.toString()}`,
+    kind: languages.InlayHintKind.Parameter,
+  };
+}
+function parseCharHint(line, i, charMatch) {
+  const charValue = charMatch[0].slice(1, -1);
+  return {
+    position: { lineNumber: i + 1, column: charMatch.index + 4 },
+    label: `: ${charValue.charCodeAt(0).toString()}`,
+    kind: languages.InlayHintKind.Parameter,
+  };
+}
+function registerMini8InlayHintsProvider() {
+  languages.registerInlayHintsProvider(MINI8_LANGUAGE_ID, {
     provideInlayHints: (model, range) => {
       const hints = [];
       const lines = model.getLinesContent();
       for (let i = range.startLineNumber - 1; i < range.endLineNumber; i++) {
         const line = lines[i];
-
-        const instruction = line.match(/^\s*([A-Z]+)\b/);
-        let isWRT = false;
-        if (instruction) {
-          const mnemonic = instruction[1];
-          if (mnemonic === "WRT") {
-            isWRT = true;
-          }
-        }
-        //parse immediate values, and inlay the raw integer value
+        const instruction = line.match(/^\s*([A-Z]+)/);
+        const isWRT = instruction && instruction[1] === "WRT";
         const hexMatch = line.match(/0x([0-9a-fA-F]+)/);
         if (hexMatch) {
-          const hexValue = parseInt(hexMatch[1], 16);
-          if (isWRT && hexValue >= 0x20 && hexValue <= 0x7e) {
-            //This is probably a character that can't be represented in a char, for a WRT instruction.
-            //Instead of showing the raw value, we show the character
-            const charValue = String.fromCharCode(hexValue);
-            hints.push({
-              position: {
-                lineNumber: i + 1,
-                column: hexMatch.index + hexMatch[0].length + 1,
-              },
-              label: `: ${charValue}`,
-              kind: languages.InlayHintKind.Parameter,
-            });
+          const hint = parseHexHint(line, isWRT, i, hexMatch);
+          if (hint) {
+            hints.push(hint);
             continue;
           }
-          if (hexValue == 10) {
-            hints.push({
-              position: {
-                lineNumber: i + 1,
-                column: hexMatch.index + hexMatch[0].length + 1,
-              },
-              label: `: \\n`,
-              kind: languages.InlayHintKind.Parameter,
-            });
-            continue;
-          }
-
-          if (hexValue < 10) {
-            // You can parse hex values up to 10, right?
-            continue;
-          }
-          hints.push({
-            position: {
-              lineNumber: i + 1,
-              column: hexMatch.index + hexMatch[0].length + 1,
-            },
-            label: `: ${hexValue.toString()}`,
-            kind: languages.InlayHintKind.Parameter,
-          });
         }
         const binMatch = line.match(/0b([01]+)/);
         if (binMatch) {
-          const binValue = parseInt(binMatch[1], 2);
-          if (isWRT && binValue < 4) {
-            //This is probably the second argument of a WRT instruction, the formatter. Instead of showing the raw value, we show the formatter name
-            const formatters = ["utf", "dec", "alph", "hex"];
-            const formatter = formatters[binValue];
-            hints.push({
-              position: {
-                lineNumber: i + 1,
-                column: binMatch.index + binMatch[0].length + 1,
-              },
-              label: `: ${formatter}`,
-              kind: languages.InlayHintKind.Parameter,
-            });
+          const hint = parseBinHint(line, isWRT, i, binMatch);
+          if (hint) {
+            hints.push(hint);
             continue;
           }
-          if (binValue < 2) {
-            // You can parse bin values up to 2, right?
-            continue;
-          }
-          hints.push({
-            position: {
-              lineNumber: i + 1,
-              column: binMatch.index + binMatch[0].length + 1,
-            },
-            label: `: ${binValue.toString()}`,
-            kind: languages.InlayHintKind.Parameter,
-          });
         }
         const charMatch = line.match(/"[^\"', ]"/);
         if (charMatch) {
-          const charValue = charMatch[0].slice(1, -1); // Remove quotes
-          hints.push({
-            position: {
-              lineNumber: i + 1,
-              column: charMatch.index + 4,
-            },
-            label: `: ${charValue.charCodeAt(0).toString()}`,
-            kind: languages.InlayHintKind.Parameter,
-          });
+          hints.push(parseCharHint(line, i, charMatch));
         }
       }
       return { hints, dispose: () => {} };
     },
   });
+}
+
+// --- Main Initialization ---
+export default function init_mini8() {
+  registerMini8Language();
+  defineMini8Theme();
+  registerMini8CompletionProvider();
+  registerMini8HoverProvider();
+  registerMini8InlayHintsProvider();
 }
