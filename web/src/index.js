@@ -2,6 +2,7 @@ import MiniMachineVM from "./vm.js";
 import { assembleFromLines } from "./assembler.js";
 import editorinit from "./editor.js";
 import { editor } from "monaco-editor";
+import * as monaco from "monaco-editor"
 editorinit();
 let interval = null;
 /**
@@ -16,7 +17,7 @@ function linenumberFunc(line) {
   // Convert line number to PC (program counter)
   if (line < 0) return 0;
   if (lineToPCMap[line] === undefined) {
-    return linenumberFunc(line - 1);
+    return ""
   }
   return (lineToPCMap[line] || 0).toString(16).padStart(2, "0").toUpperCase();
 }
@@ -54,7 +55,7 @@ assemblyModel.onDidChangeContent((e) => {
   localStorage.setItem("program", assemblyEditor.getValue());
   // Update the disassembly view
 });
-
+const decorations = assemblyEditor.createDecorationsCollection();
 selector.addEventListener("input", async () => {
   const value = selector.value;
   if (value) {
@@ -272,7 +273,23 @@ function updateDisassembly(currentPC = null) {
   assemblyEditor.setValue(disassembly);
 }
 function highlightCurrentPC(pc) {
-    
+    // Remove previous decorations
+    decorations.clear();
+
+    // Find all line numbers that map to this PC
+    const lines = Object.entries(lineToPCMap)
+        .filter(([line, mappedPC]) => mappedPC === pc)
+        .map(([line]) => parseInt(line, 10) + 1); // Monaco lines are 1-based
+
+    if (lines.length === 0) return;
+
+    // Create decorations for each matching line
+    const newDecorations = lines.map(lineNumber => ({
+        range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+        options: { isWholeLine: true, linesDecorationsClassName: "current-pc" }
+    }));
+
+    decorations.set(newDecorations);
 }
 
 function render() {
