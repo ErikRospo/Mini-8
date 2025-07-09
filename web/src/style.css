@@ -166,7 +166,7 @@ option {
   outline: none;
 }
 #disasm {
-  min-height: 600px;
+  min-height: 800px;
   overflow-y: auto;
   border: 1px solid #0f0;
 }
