@@ -95,6 +95,11 @@ function loadVMFromRaw() {
 
 // --- Disassembly and Editor Functions ---
 function updateDisassembly(currentPC = null) {
+  if (rawCodeInput.value.trim() === "") {
+    setOutputError("No code to disassemble. Please enter some code.");
+    return;
+  }
+  clearOutputError();
   const code = rawCodeInput.value
     .trim()
     .split(/\s+/)
@@ -174,18 +179,35 @@ function render() {
 
 // --- File and Demo Loading ---
 function handleFileLoad(file) {
-  const reader = new FileReader();
-  reader.onload = function (evt) {
-    const buffer = evt.target.result;
-    const bytes = new Uint8Array(buffer);
-    const text = Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join(" ");
-    rawCodeInput.value = text;
-    vm = null;
-    updateDisassembly(0);
-  };
-  reader.readAsArrayBuffer(file);
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === "m8a" || ext === "txt") {
+    // Assembly source file: load as text into editor
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      const program = evt.target.result;
+      assemblyEditor.setValue(program);
+      vm = null;
+      render();
+      assemblyEditor.focus();
+    };
+    reader.readAsText(file);
+  } else if (ext === "mi8" || ext === "bin") {
+    // Compiled binary: load as hex into rawCodeInput
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      const buffer = evt.target.result;
+      const bytes = new Uint8Array(buffer);
+      const text = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ");
+      rawCodeInput.value = text;
+      vm = null;
+      updateDisassembly(0);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    setOutputError("Unsupported file type: " + ext);
+  }
 }
 
 // --- Event Listeners ---
