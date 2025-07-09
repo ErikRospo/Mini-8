@@ -1,5 +1,5 @@
 import { editor, languages } from "monaco-editor";
-import { OPCODES, REGISTERS, encodeOpcode, handleShorthand } from "./assembler";
+import { OPCLASS, OPCODES, REGISTERS } from "./assembler";
 export default function init_mini8() {
   languages.register({ id: "mini-8" });
   languages.setMonarchTokensProvider("mini-8", {
@@ -119,7 +119,36 @@ export default function init_mini8() {
       return { suggestions };
     },
   });
-
+  languages.registerHoverProvider("mini-8", {
+    provideHover: (model, position) => {
+      const word = model.getWordAtPosition(position);
+      if (!word) return null;
+      const token = word.word.toUpperCase();
+      if (OPCODES[token]) {
+        const [opclass, code] = OPCODES[token];
+        const codeval = (code | (OPCLASS[opclass] << 3))
+          .toString(2)
+          .padStart(8, "0")
+          .toUpperCase();
+        return {
+          range: {
+            startLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endLineNumber: position.lineNumber,
+            endColumn: word.endColumn,
+          },
+          contents: [
+            { value: `**Opcode:** ${token}` },
+            { value: `**Class:** ${opclass}` },
+            { value: `**Code:** ${codeval}` },
+            {
+              value: `**Mnemonic:** ${token} (${opclass})`,
+            },
+          ],
+        };
+      }
+    },
+  });
   languages.registerInlayHintsProvider("mini-8", {
     provideInlayHints: (model, range) => {
       const hints = [];
@@ -153,7 +182,7 @@ export default function init_mini8() {
             });
             continue;
           }
-          if (hexValue == 10){
+          if (hexValue == 10) {
             hints.push({
               position: {
                 lineNumber: i + 1,
