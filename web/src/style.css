@@ -35,7 +35,7 @@ body {
 }
 
 .register {
-  min-width: 60px;
+  min-width: 2rem;
 }
 
 .controls {
@@ -200,4 +200,27 @@ option {
 }
 #scrollPC:checked {
   background: #0f0;
+}
+
+
+.reg-value {
+  font-family: monospace;
+  font-size: 1em;
+  max-width: fit-content;
+  border:none;
+  border-bottom: 1px solid #0f0;
+  background: #181818;
+  color: #b8ffb8;
+  border-radius: 3px;
+  margin-left: 0.1em;
+  margin-right: 0.1em;
+  padding: 0 0.2em;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.reg-value:disabled {
+  background: #222;
+  color: #888;
 }

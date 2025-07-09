@@ -164,12 +164,38 @@ function render() {
     const val = vm ? vm.reg[i].toString(16).padStart(2, "0") : "00";
     const div = document.createElement("div");
     div.className = "register";
-    div.textContent = `${n}: 0x${val}`;
+    // Register name (static)
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = `${n}: 0x`;
+    // Register value (editable)
+    const valueInput = document.createElement("input");
+    valueInput.type = "text";
+    valueInput.value = val;
+    valueInput.size = 2;
+    valueInput.maxLength = 2;
+    valueInput.className = "reg-value";
+    valueInput.style.width = "2.5em";
+    valueInput.style.textAlign = "right";
+    valueInput.disabled = !vm;
+    // Flash effect if changed
     if (previousRegs[n] !== val) {
-      div.classList.add("flash");
-      setTimeout(() => div.classList.remove("flash"), 300);
+      valueInput.classList.add("flash");
+      setTimeout(() => valueInput.classList.remove("flash"), 300);
     }
     previousRegs[n] = val;
+    // On change, update VM register
+    valueInput.addEventListener("change", (e) => {
+      if (!vm) return;
+      let newVal = parseInt(e.target.value, 16);
+      if (isNaN(newVal) || newVal < 0 || newVal > 0xff) {
+        e.target.value = vm.reg[i].toString(16).padStart(2, "0");
+        return;
+      }
+      vm.reg[i] = newVal;
+      render();
+    });
+    div.appendChild(nameSpan);
+    div.appendChild(valueInput);
     registersEl.appendChild(div);
   });
   RAMEl.innerText = vm ? vm.ram.map(toHex).join(" ") : "";
@@ -179,7 +205,7 @@ function render() {
 
 // --- File and Demo Loading ---
 function handleFileLoad(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
+  const ext = file.name.split(".").pop().toLowerCase();
   if (ext === "m8a" || ext === "txt") {
     // Assembly source file: load as text into editor
     const reader = new FileReader();
