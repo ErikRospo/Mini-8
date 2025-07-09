@@ -147,7 +147,7 @@ export function assembleFromLines(lines) {
       }
 
       if (!line.trim()) {
-        origLineToPc[origLine] = pc; 
+        origLineToPc[origLine] = pc;
         continue;
       }
       const tokens = line.trim().split(/[,\s]+/);

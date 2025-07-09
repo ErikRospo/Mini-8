@@ -137,7 +137,7 @@ export default function init_mini8() {
         const hexMatch = line.match(/0x([0-9a-fA-F]+)/);
         if (hexMatch) {
           const hexValue = parseInt(hexMatch[1], 16);
-          if (hexValue < 10){
+          if (hexValue < 10) {
             // You can parse hex values up to 10, right?
             continue;
           }
@@ -153,10 +153,10 @@ export default function init_mini8() {
         const binMatch = line.match(/0b([01]+)/);
         if (binMatch) {
           const binValue = parseInt(binMatch[1], 2);
-          if (isWRT && binValue < 4){
+          if (isWRT && binValue < 4) {
             //This is probably the second argument of a WRT instruction, the formatter. Instead of showing the raw value, we show the formatter name
-            const formatters = ["utf", "dec","alph","hex"];
-            const formatter= formatters[binValue];
+            const formatters = ["utf", "dec", "alph", "hex"];
+            const formatter = formatters[binValue];
             hints.push({
               position: {
                 lineNumber: i + 1,

@@ -51,10 +51,6 @@ const selector = document.getElementById("demos");
 
 const scrollPCCheckbox = document.getElementById("scrollPC");
 
-
-
-
-
 const assemblyEditor = editor.create(disasmEl, {
   value: localStorage.getItem("program") || "",
   language: "mini-8",
@@ -285,44 +281,47 @@ function updateDisassembly(currentPC = null) {
   assemblyEditor.setValue(disassembly);
 }
 function highlightCurrentPC(pc) {
-    // Remove previous decorations
-    decorations.clear();
+  // Remove previous decorations
+  decorations.clear();
 
-    if (pc === null || pc === undefined) return; // No PC to highlight
+  if (pc === null || pc === undefined) return; // No PC to highlight
 
-
-    // Find all line numbers whose mapped PC (using linenumberFunc logic) matches the current PC
-    const lines = [];
-    let lastPC = 0;
-    for (let line = 0; line < assemblyEditor.getModel().getLineCount(); line++) {
-        let mappedPC;
-        if (lineToPCMap[line] !== undefined) {
-            mappedPC = lineToPCMap[line];
-            lastPC = mappedPC;
-        } else {
-            mappedPC = lastPC;
-        }
-        if (mappedPC === pc) {
-            lines.push(line + 1); // Monaco lines are 1-based
-        }
+  // Find all line numbers whose mapped PC (using linenumberFunc logic) matches the current PC
+  const lines = [];
+  let lastPC = 0;
+  for (let line = 0; line < assemblyEditor.getModel().getLineCount(); line++) {
+    let mappedPC;
+    if (lineToPCMap[line] !== undefined) {
+      mappedPC = lineToPCMap[line];
+      lastPC = mappedPC;
+    } else {
+      mappedPC = lastPC;
     }
-
-    if (lines.length === 0) return;
-
-    // Create decorations for each matching line
-    const newDecorations = lines.map((lineNumber) => ({
-        range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-        options: { isWholeLine: true, linesDecorationsClassName: "current-pc" },
-    }));
-
-    decorations.set(newDecorations);
-
-    if (scrollPCCheckbox.checked) {
-        // Scroll to the first highlighted line
-        const firstLine = lines[0];
-        const lastLine = lines[lines.length - 1];
-        assemblyEditor.revealLinesInCenterIfOutsideViewport(firstLine, lastLine, monaco.editor.ScrollType.Smooth);
+    if (mappedPC === pc) {
+      lines.push(line + 1); // Monaco lines are 1-based
     }
+  }
+
+  if (lines.length === 0) return;
+
+  // Create decorations for each matching line
+  const newDecorations = lines.map((lineNumber) => ({
+    range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+    options: { isWholeLine: true, linesDecorationsClassName: "current-pc" },
+  }));
+
+  decorations.set(newDecorations);
+
+  if (scrollPCCheckbox.checked) {
+    // Scroll to the first highlighted line
+    const firstLine = lines[0];
+    const lastLine = lines[lines.length - 1];
+    assemblyEditor.revealLinesInCenterIfOutsideViewport(
+      firstLine,
+      lastLine,
+      monaco.editor.ScrollType.Smooth
+    );
+  }
 }
 
 function render() {
