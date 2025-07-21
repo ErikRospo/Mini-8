@@ -2,6 +2,35 @@ define EMPTY 0x00
 define X 0x01
 define O 0x02
 label $main
+    WRT "T"
+    WRT "I"
+    WRT "C"
+    WRT 32, 0b00 ; space
+    WRT "T"
+    WRT "A"
+    WRT "C"
+    WRT 32, 0b00 ; space
+    WRT "T"
+    WRT "O"
+    WRT "E"
+    WRT 10 ; newline
+    WRT 10 ; newline
+
+MOV 0, r0
+label $board_explain_loop
+    WRT r0, 0b01 ; Print the current index
+    ADD r0, 1, r0 ; Increment the index
+    JEQ r0, 9, $end_board_explain ; If r0 is 9, end the loop
+    JEQ r0, 3, $board_explain_newline ; If r0 is 3, print a newline
+    JEQ r0, 6, $board_explain_newline ; If r0 is 6, print a newline
+    JMP $board_explain_loop
+label $board_explain_newline
+    WRT 10 ; newline
+    JMP $board_explain_loop
+
+label $end_board_explain
+    WRT 10 ; newline
+    WRT 10 ; newline
 
 label $p1turn
     MOV X, r0
