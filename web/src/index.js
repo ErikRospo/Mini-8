@@ -30,6 +30,9 @@ const disassembleBtn = document.getElementById("disassembleBtn");
 
 // State
 let interval = null;
+/**
+ * @type {MiniMachineVM}
+ */
 let vm = null; // MiniMachineVM instance
 let lineToPCMap = {};
 const previousRegs = {};
@@ -347,7 +350,7 @@ inputEl.addEventListener("input", (e) => {
   console.log(e.target.value);
   const val = e.target.value;
   if (val && vm) {
-    vm.textBuffer.extend(val);
+    vm.textBuffer.push(...val);
   }
   inputEl.value = "";
 });
