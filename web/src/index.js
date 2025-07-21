@@ -18,6 +18,7 @@ const registersEl = document.getElementById("registers");
 const documentationButton = document.getElementById("documentation");
 const speedInput = document.getElementById("vmSpeed");
 const outputEl = document.getElementById("output");
+const inputEl = document.getElementById("inputEl");
 const RAMEl = document.getElementById("ram");
 const stackEl = document.getElementById("stack");
 const selector = document.getElementById("demos");
@@ -341,6 +342,16 @@ assemblyModel.onDidChangeContent(() => {
   localStorage.setItem("program", assemblyEditor.getValue());
 });
 
+inputEl.addEventListener("input", (e) => {
+  console.log("Input event triggered");
+  console.log(e.target.value);
+  const val = e.target.value;
+  if (val && vm) {
+    vm.textBuffer.extend(val);
+  }
+  inputEl.value = "";
+});
+
 // --- Initialization ---
 (function init() {
   try {
@@ -351,5 +362,6 @@ assemblyModel.onDidChangeContent(() => {
     setOutputError(error.message);
     console.error("Error assembling initial code:", error);
   }
+
   render();
 })();

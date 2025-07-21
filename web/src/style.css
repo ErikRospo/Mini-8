@@ -144,6 +144,11 @@ option {
   font-weight: bold;
 }
 
+#inputEl {
+  min-height: 1em;
+  max-height: 2em;
+  overflow-y: scroll;
+}
 #ram {
   min-height: 90px;
   overflow-x: auto;

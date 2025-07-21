@@ -12,6 +12,7 @@ export default class MiniMachineVM {
     // Dependency injection for output
     this.printOutput = printOutput || (() => {});
     this.outputEl = outputEl || null;
+    this.textBuffer = [];
   }
 
   fetch() {
@@ -83,6 +84,59 @@ export default class MiniMachineVM {
     } catch (e) {
       // Incomplete UTF-8 sequence — keep buffering
     }
+  }
+
+  rft(fmt) {
+    // fmt: 0 = UTF-8 char, 1 = DEC (number), 2 = ALP (A-Z), 3 = HEX (0-F)
+    if (this.textBuffer.length === 0) {
+      return 0xfe; // No input available
+    }
+    const val = this.textBuffer.shift();
+
+    switch (fmt) {
+      case 0: {
+        // UTF-8: return next character code
+        if (typeof val === "string" && val.length > 0) {
+          return val.charCodeAt(0) & 0xff;
+        }
+        return 0xff;
+      }
+      case 1: {
+        // DEC: parse next input as decimal number (0-9)
+        const num = typeof val === "string" ? parseInt(val, 10) : val;
+        if (!isNaN(num) && num >= 0 && num <= 9) {
+          return num & 0xff;
+        }
+        return 0xff;
+      }
+      case 2: {
+        // ALP: parse next input as A-Z (0-25)
+        if (typeof val === "string" && /^[A-Za-z]$/.test(val)) {
+          const code = val.toUpperCase().charCodeAt(0) - 65;
+          if (code >= 0 && code <= 25) {
+            return code & 0xff;
+          }
+        }
+        return 0xff;
+      }
+      case 3: {
+        // HEX: parse next input as hex digit (0-F)
+        let num;
+        if (typeof val === "string") {
+          num = parseInt(val, 16);
+        } else {
+          num = val;
+        }
+        if (!isNaN(num) && num >= 0 && num <= 15) {
+          return num & 0xff;
+        }
+        return 0xff;
+      }
+      default:
+        return 0xff; // Unknown format
+    }
+    // This should never be reached, but just in case
+    return 0xff; // Fallback for unknown format
   }
 
   execute(instr) {
@@ -207,9 +261,10 @@ export default class MiniMachineVM {
           return;
         }
         case 6: {
-          let offset = this.reg[0];
-          if (offset >= 0x80) offset -= 0x100;
-          this.setReg(this.PC, (this.reg[this.PC] + offset) & 0xff);
+          const fmt = this.getOperand(op2, imm2);
+
+          this.setReg(dest & 0x7, this.rft(fmt));
+
           return;
         }
         case 7: {
