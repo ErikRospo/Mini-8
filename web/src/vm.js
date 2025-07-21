@@ -1,4 +1,13 @@
+/**
+ * MiniMachineVM - A simple virtual machine for executing MiniMachine bytecode.
+ */
 export default class MiniMachineVM {
+  /**
+   * @param {Uint8Array} program - The program bytecode to execute.
+   * @param {Object} [options]
+   * @param {function(string):void} [options.printOutput] - Callback for output.
+   * @param {HTMLElement} [options.outputEl] - Optional output element for display.
+   */
   constructor(program, { printOutput, outputEl } = {}) {
     this.utf8Decoder = new TextDecoder("utf-8", { fatal: true });
     this.utf8Buffer = [];
@@ -12,9 +21,22 @@ export default class MiniMachineVM {
     // Dependency injection for output
     this.printOutput = printOutput || (() => {});
     this.outputEl = outputEl || null;
+    /**
+     * Text buffer for formatted input.
+     * @type {Array<string>}
+     * This buffer is used to store input values. The VM will read from this buffer when
+     * instructions request input, according to the specified format.
+     * This means that the buffer always contains the *string* values that the user has entered,
+     * and it's up to the VM to interpret them correctly based on the input format.
+     */
     this.textBuffer = [];
+
   }
 
+  /**
+   * Fetches the next instruction from the program.
+   * @returns {Uint8Array|null} The next instruction or null if halted.
+   */
   fetch() {
     const pc = this.reg[this.PC];
     const idx = pc * 4;
@@ -25,6 +47,12 @@ export default class MiniMachineVM {
     return this.program.slice(idx, idx + 4);
   }
 
+  /**
+   * Gets the operand value, resolving immediate or register.
+   * @param {number} val - Operand value or register index.
+   * @param {number} isImm - 1 if immediate, 0 if register.
+   * @returns {number} The resolved operand value.
+   */
   getOperand(val, isImm) {
     if (!isImm) {
       if (val === 5) {
@@ -36,6 +64,11 @@ export default class MiniMachineVM {
     return val;
   }
 
+  /**
+   * Sets a register or memory location.
+   * @param {number} idx - Register index.
+   * @param {number} value - Value to set.
+   */
   setReg(idx, value) {
     if (idx === 6) return; // r6 reserved
 
@@ -52,6 +85,11 @@ export default class MiniMachineVM {
     }
   }
 
+  /**
+   * Writes output in the specified format.
+   * @param {number} val - Value to output.
+   * @param {number} fmt - Output format (0=UTF-8, 1=DEC, 2=ALP, 3=HEX).
+   */
   wrt(val, fmt) {
     switch (fmt) {
       case 0:
@@ -68,6 +106,10 @@ export default class MiniMachineVM {
         break;
     }
   }
+  /**
+   * Handles a single UTF-8 byte for output.
+   * @param {number} byte - The byte to process.
+   */
   handleUtf8Byte(byte) {
     if (byte === 0x00) {
       if (this.outputEl) this.outputEl.innerText = "";
@@ -86,6 +128,11 @@ export default class MiniMachineVM {
     }
   }
 
+  /**
+   * Reads formatted input from the text buffer.
+   * @param {number} fmt - Input format (0=UTF-8, 1=DEC, 2=ALP, 3=HEX).
+   * @returns {number} The formatted input value or error code.
+   */
   rft(fmt) {
     // fmt: 0 = UTF-8 char, 1 = DEC (number), 2 = ALP (A-Z), 3 = HEX (0-F)
     if (this.textBuffer.length === 0) {
@@ -139,6 +186,10 @@ export default class MiniMachineVM {
     return 0xff; // Fallback for unknown format
   }
 
+  /**
+   * Executes a single instruction.
+   * @param {Uint8Array|number[]} instr - The instruction to execute.
+   */
   execute(instr) {
     const [opcode, op1, op2, dest] = instr;
     const imm1 = (opcode >> 6) & 1;
@@ -275,6 +326,9 @@ export default class MiniMachineVM {
       this.reg[this.PC] = (this.reg[this.PC] + 1) % 256;
     }
   }
+  /**
+   * Renders the register values to the UI.
+   */
   renderRegisters() {
     const names = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "PC"];
     let out = names
@@ -283,6 +337,9 @@ export default class MiniMachineVM {
     document.getElementById("registers").textContent = out;
   }
 
+  /**
+   * Runs the program until halted.
+   */
   run() {
     while (!this.halted) {
       const instr = this.fetch();
@@ -292,6 +349,9 @@ export default class MiniMachineVM {
     this.printOutput("\n[Program Halted]\n");
   }
 
+  /**
+   * Executes a single instruction step.
+   */
   step() {
     if (this.halted) return;
     const instr = this.fetch();
@@ -301,6 +361,14 @@ export default class MiniMachineVM {
     }
     this.execute(instr);
   }
+  /**
+   * Disassembles an instruction into human-readable form.
+   * @param {number} opcode
+   * @param {number} op1
+   * @param {number} op2
+   * @param {number} dest
+   * @returns {string} Disassembled instruction.
+   */
   disassemble(opcode, op1, op2, dest) {
     const imm1 = (opcode >> 6) & 1;
     const imm2 = (opcode >> 5) & 1;
