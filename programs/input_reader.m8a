@@ -1,0 +1,106 @@
+JMP $mainloop
+label $decprint:
+    PUSH r2
+    PUSH r1
+    PUSH r0
+
+    MOV 0, r2
+    
+label $hundreds_loop
+    JLT r0, 100, $after_hundreds
+    SUB r0, 100, r0
+    ADD r2, 1, r2
+    JMP $hundreds_loop
+
+label $after_hundreds
+    WRT r2, 0b01 ; DEC output
+
+    MOV 0, r2
+
+label $tens_loop
+    JLT r0, 10, $after_tens
+    SUB r0, 10, r0
+    ADD r2, 1, r2
+    JMP $tens_loop
+
+label $after_tens
+    WRT r2, 0b01
+    WRT r0, 0b01
+
+    POP r0
+    POP r1
+    POP r2
+    POP r7 ; RET 
+
+label $binprint:
+    PUSH r1
+    PUSH r2
+    PUSH r3
+
+    MOV 8, r1         ; bit count
+    MOV 0b10000000, r2 ; start with MSB mask
+
+label $bit_loop:
+    AND r0, r2, r3    ; isolate current bit
+    JNE r3, 0, $bit_one
+    MOV 0, r3         ; ASCII '0'
+    JMP $bit_out
+
+label $bit_one:
+    MOV 1, r3         ; ASCII '1'
+
+label $bit_out:
+    WRT r3, 0b01      ; write character 
+    ROR r2, 1, r2     ; shift mask right
+    SUB r1, 1, r1
+    JNE r1, 0, $bit_loop
+
+    POP r3
+    POP r2
+    POP r1
+    POP r7            ; RET
+
+label $hexprint:
+    PUSH r1
+    PUSH r0
+    MOV r0, r1 ; Keep a copy of the result in r1 for high nibble
+    AND r1, 0xF0, r1 ; Get the high nibble of r1
+    ; move it down to the low nibble for printing
+    ROR r1, 0x04, r1
+    WRT r1, 0b11 ; Write high nibble to the terminal in hex format
+
+    AND r0, 0x0F, r0 ; Get the last 4 bits of r0
+    WRT r0, 0b11; Write low nibble to the terminal in hex format
+    POP r0
+    POP r1
+    POP r7 ; RET 
+
+label $mainloop
+    RFT r0
+    JGE r0, 0xFE, $mainloop
+    
+    CALL $decprint
+    WRT ":" ;WRT with no argument is UTF-8, same as explicit 0b00/ 0d mode
+    WRT 32
+    WRT "0"
+    WRT "b"
+    CALL $binprint
+    WRT ":"
+    WRT 32
+    WRT "0"
+    WRT "x"
+    CALL $hexprint
+    WRT 32
+    JGE r0, 0x7F, $nonprintable
+    JLT r0, 32, $nonprintable
+    WRT "A"
+    WRT ":"
+    WRT 0x22 ; "
+    WRT r0
+    WRT 0x22 ; "
+
+label $nonprintable 
+    WRT 10, 0b00
+    ADD r0, 1, r0
+    JNE r0, 0, $mainloop ; If we've overflowed, we went past 256, exit
+    HCF
