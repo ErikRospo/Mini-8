@@ -83,6 +83,8 @@ The `RFT` instruction reads a value from the terminal (input device) and places 
 
 In Alphabetic and Hexadecimal formats, the value should be treated as case-insensitive, meaning that `A` and `a` are treated as the same character and will both result in `0x00` being written to `DEST`.
 
+The implementation should have an internally managed buffer for the input, which is read from when the `RFT` instruction is executed. If the buffer is empty, the implementation should return `0xfe` for all formats, indicating that no input was available. If the buffer is not empty, the implementation should read the next character from the buffer and convert it to the appropriate format based on `OP2`.
+
 If the input read is outside the maximum supported value for the specified format, the implementation should return `0xff` for all formats.
 
 For example:
