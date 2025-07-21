@@ -225,6 +225,10 @@ class MiniMachineVM:
                         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
                 except EOFError:
                     user_input = ""
+                    input_val = 0xFE
+                    self.set_reg(dest & 0x7, input_val)
+                    return
+
                 if fmt == 0:  # UTF-8
                     if user_input:
                         input_val = ord(user_input[0]) & 0xFF
