@@ -47,7 +47,7 @@ function registerMini8Language() {
         [/\b(?:JMP|JNE|JGE|JGT|NOP|JEQ|JLT|JLE)\b/, "keyword.cond"],
 
         // IO keywords
-        [/\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|JRE|HCF)\b/, "keyword.io"],
+        [/\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|RFT|HCF)\b/, "keyword.io"],
 
         // Registers
         [/\b(?:r[0-8]|PC|RAMADDR|RAMDATA)\b/, "variable.predefined"],

@@ -21,7 +21,7 @@ export const OPCODES = {
   POP: ["IO", 0b011],
   WRT: ["IO", 0b100],
   CALL: ["IO", 0b101],
-  JRE: ["IO", 0b110],
+  RFT: ["IO", 0b110],
   HCF: ["IO", 0b111],
 };
 
@@ -82,6 +82,8 @@ export function handleShorthand(op, args) {
   else if (op === "HCF") args = ["0", "0", "0"];
   else if (op === "WRT" && args.length === 1) args.push("0", "0");
   else if (op === "WRT" && args.length === 2) args.push("0");
+  else if (op === "RFT" && args.length === 1) args= ["0", "0", args[0]];
+  else if (op === "RFT" && args.length === 2) args= ["0", args[0], args[1]];
   else if (op === "PUSH" && args.length === 1) args.push("0", "0");
   else if (op === "POP" && args.length === 1) args = ["0", "0", args[0]];
   else if (op === "JMP" && args.length === 1) args = ["0", "0", args[0]];

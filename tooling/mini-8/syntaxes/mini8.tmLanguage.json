@@ -16,7 +16,7 @@
     },
     {
       "name": "keyword.other.io.mini8",
-      "match": "\\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|JRE|HCF)\\b"
+      "match": "\\b(?:MOV|SWAP|PUSH|POP|WRT|CALL|RFT|HCF)\\b"
     },
     {
       "name": "variable.other.predefined.register.mini8",

@@ -25,7 +25,7 @@ OPCODES = {
     "POP": ("IO", 0b011),
     "WRT": ("IO", 0b100),
     "CALL": ("IO", 0b101),
-    "JRE": ("IO", 0b110),
+    "RFT": ("IO", 0b110),
     "HCF": ("IO", 0b111),
 }
 
@@ -105,6 +105,14 @@ def handle_shorthand_op(op: str, args: List[str]) -> List[str]:
                 f"Warning: WRT with one argument: {args}. Defaulting to mode 0, ASCII"
             )
         if len(args) == 2:  # make DEST 0
+            args.append("0")
+    elif op == "RFT":
+        if len(args) == 1:
+            args.insert(0, "0") # Op1 is ignored, 0
+            args.insert(1, "0") # Use UTF-8 mode
+        elif len(args) == 2:
+            args.insert(0, "0") # Op1 is ignored, 0
+        elif len(args) == 2:
             args.append("0")
     elif op == "PUSH" and len(args) == 1:
         args.append("0")

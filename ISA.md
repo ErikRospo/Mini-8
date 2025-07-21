@@ -42,7 +42,7 @@ Opcode is a 1 byte value, with the following structure:
 | `IO`   | `011` | Pop stack into out  | `POP`  | `0XX10011`                            | No    | No    | Yes    |
 | `IO`   | `100` | Write OP1 to TERM   | `WRT`  | `0XX10100` (See [WRT](#wrt))          | Yes   | Yes   | No     |
 | `IO`   | `101` | Call                | `CALL` | `0XX10101`                            | Yes   | No    | No     |
-| `IO`   | `110` | Jump Relative       | `JRE`  | `0XX10110`                            | No    | No    | No     |
+| `IO`   | `110` | Read from terminal  | `RFT`  | `0XX10110` (See [RFT](#rft))          | No    | Yes   | Yes    |
 | `IO`   | `111` | Halt                | `HCF`  | `0XX10111`                            | No    | No    | No     |
 
 `RET` can be implemented by macros by `POP`ing the stack into the PC register, `r7`.
@@ -52,29 +52,22 @@ Opcode is a 1 byte value, with the following structure:
 `DEST` is always a register, and is the destination of the operation.  
 \*: All comparisons are unsigned
 
-`COND` jumps are to absolute locations, with the exception of `JRE`, which jumps to a relative location based on the value in `r0`.
+All jumps are to absolute locations.
 
-Unless stated otherwise, all immediates are unsigned 8-bit integers, and all registers are 8-bit unsigned integers.
-The only exception is the `JRE` instruction, which interprets the value in `r0` as a signed 8-bit integer, and jumps to the address `PC + r0`, where `PC` is the current value of the program counter (`r7`).
+Unless stated otherwise, all immediates are treated as unsigned 8-bit integers, and all registers are 8-bit as unsigned integers.
 
 Two's complement is used for signed integers, so `0x80` is `-128`, and `0x7F` is `127`. To convert an u8 to an i8, the `SUB` instruction can be used with `0x80` as the second operand, e.g. `SUB r0, 0x80, r1` will convert the value in `r0` to a signed integer in `r1`.
 
 In operations where `DEST` is not used, the value in `DEST` should be 0 by specification, and is ignored by the operation.
 
-The same applies to `OP2` in `NOT`, `NOP`, `PUSH`, `POP`, `CALL`, `MOV`, `JRE`, and `HCF` instructions, which are ignored and should be set to 0 by specification.
-The only times `OP1` is ignored are in the `NOP` and `HCF` instructions, which are no-ops and halt the program, respectively. `OP1` should be set to 0 by specification in these cases.
+The same applies to `OP2` in `NOT`, `NOP`, `PUSH`, `POP`, `CALL`, `MOV`, `RFT`, and `HCF` instructions, which are ignored and should be set to 0 by specification.
+The only times `OP1` is ignored are in the `NOP`, `RFT`, and `HCF` instructions, which are no-ops, read from terminal, and halt the program, respectively. `OP1` should be set to 0 by specification in these cases.
+
 
 #### WRT
 
 The `WRT` instruction writes the value in OP1 to the terminal.
-OP2 specifies the format to use for the output, and is a 2-bit value:
-
-| Format      | OP2 Value | Description                                                                  | Max Supported Value |
-| :---------- | :-------- | ---------------------------------------------------------------------------- | ------------------- |
-| UTF-8       | `00`      | UTF-8 character output (default)                                             | `0xFF`              |
-| Decimal     | `01`      | Unsigned decimal output (e.g. `0x00` is `0`, `0x09` is `9`)                  | `0x09` (9)          |
-| Alphabetic  | `10`      | Alphabetic output, indexed by OP1 (`0` is `A`, `1` is `B`, ..., `25` is `Z`) | `0x19` (25, `Z`)    |
-| Hexadecimal | `11`      | Hexadecimal output (e.g. `0x0` is `0`, `0x2` is `2`, `0xF` is `F`)           | `0x0F` (16)         |
+OP2 specifies the format to use for the output, and is a 2-bit value. See the [Terminal formatting table](#terminal-formatting-table) for the available formats and their maximum supported values.
 
 Calling `WRT` with an immediate value greater than the maximum supported value for the specified format will result in a `?` being printed for that format.
 
@@ -83,6 +76,36 @@ Both formats Alphabetic and Hexadecimal (`10` and `11`) SHOULD output uppercase 
 Calling `WRT` in UTF-8 format with an immediate value of `0x00` will clear the terminal.
 
 Implementations SHOULD support UTF-8, but MAY use ASCII if it is infeasable to implement UTF-8. If they do, the maximum supported value should be `0x7f`, DEL. Values higher than this should be replaced with `?`, as usual. 
+
+#### RFT
+
+The `RFT` instruction reads a value from the terminal (input device) and places it into `DEST`. Similar to `WRT`, the format should be parsed according to the [Terminal formatting table](#terminal-formatting-table). `RFT` also uses the `OP2` value for determining the format of the input. This means that `OP1` is ignored, and should be set to `0` by specification. 
+
+In Alphabetic and Hexadecimal formats, the value should be treated as case-insensitive, meaning that `A` and `a` are treated as the same character and will both result in `0x00` being written to `DEST`.
+
+If the input read is outside the maximum supported value for the specified format, the implementation should return `0xff` for all formats.
+
+For example:
+
+```
+RFT 0x00, 0b10, r1
+```
+will read a value from the terminal and place it into `r1`, using the Alphabetic format (0b10).
+
+If the input is `A` OR `a`: `r1` will be set to `0x00`.
+
+If the input is `Z` OR `z`: `r1` will be set to `0x1A`.
+
+If the input is not an alphabetic character, `r1` will be set to `0xFF`.
+
+
+#### Terminal formatting table
+| Format name | OP2 Value | Description                                                                  | Max Supported Value |
+| :---------- | :-------- | ---------------------------------------------------------------------------- | ------------------- |
+| UTF-8       | `00`      | UTF-8 character output (default)                                             | `0xFF`              |
+| Decimal     | `01`      | Unsigned decimal output (e.g. `0x00` is `0`, `0x09` is `9`)                  | `0x09` (9)          |
+| Alphabetic  | `10`      | Alphabetic output, indexed by OP1 (`0` is `A`, `1` is `B`, ..., `25` is `Z`) | `0x19` (25, `Z`)    |
+| Hexadecimal | `11`      | Hexadecimal output (e.g. `0x0` is `0`, `0x2` is `2`, `0xF` is `F`)           | `0x0F` (16)         |
 
 #### Jump Instructions
 
@@ -93,9 +116,9 @@ All jump instructions will write `DEST` to the program counter (`r7`), which is 
 ## Design rationale/notes
 
 - The ISA is designed to be simple and easy to understand, with a small set of instructions that can be used to perform a wide range of operations.
-- The first bit in the subtype of `ALU` operations is used to indicate a related operation. For example, `ROR` and `ROL` are bitwise rotations, and are paired for symmetry, as is `ADD` and `SUB` Exception: `NOT` and 0OR` are paired as outliers.
+- The first bit in the subtype of `ALU` operations is used to indicate a related operation. For example, `ROR` and `ROL` are bitwise rotations, and are paired for symmetry, as is `ADD` and `SUB` Exception: `NOT` and `OR` are paired as outliers.
 - The `COND` operations are designed to be used for control flow, allowing the program to branch based on the values of the operands. The first bit in the subtype is used to negate the condition, so `JNE` is the negation of `JEQ`, and `JGE` is the negation of `JLT`. This allows for an easier implementation of control flow in hardware, as the negation can be done with a single bit flip.
-- The `IO` operations are designed to be used for input/output and miscellaneous operations. The `MOV` and `SWAP` instructions are used to move data between registers, and the `PUSH` and `POP` instructions are used to manipulate the stack. The `WRT` instruction is used to write data to the terminal, and the `CALL` instruction is used to call subroutines. The `JRE` instruction is used to jump to a relative address, which is useful for implementing loops and other control flow structures. The `HCF` instruction is used to halt the program, which can be useful for debugging or when the program has finished executing.
+- The `IO` operations are designed to be used for input/output and miscellaneous operations. The `MOV` and `SWAP` instructions are used to move data between registers, and the `PUSH` and `POP` instructions are used to manipulate the stack. The `WRT` instruction is used to write data to the terminal and `RFT` is used to read from the terminal. The `CALL` instruction is used to call subroutines, and is equivalent to pushing `r7` onto the stack, followed by a `JMP` within the same `PC`. The `HCF` instruction is used to halt the program, which can be useful for debugging or when the program has finished executing. 
 
 ## Registers
 
@@ -252,3 +275,9 @@ SUB is an ALU operation (`00` type + `110` subtype), so the opcode is `00100110`
 This instruction performs a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and stores the result back in `r0`.  
 Binary: `00100011 00000000 01010101 00000000`  
 XOR is an ALU operation (`00` type + `011` subtype), so the opcode is `00100011`. The operands are `r0`, `0x55`, and `r0`, which are `00000000`, `01010101`, and `00000000` respectively. This will perform a bitwise XOR operation between the value in `r0` and the immediate value `0x55`, and store the result back in `r0`.
+
+
+## Miscellaneous Notes
+
+The instruction set does not need to include any extra circuitry for a `NOP` instruction, as it is simply a jump that is never taken.
+Alternatively, `0x00 0x00 0x00 0x00` is a valid instruction that performs `AND r0, r0, r0`, which effectively does nothing.

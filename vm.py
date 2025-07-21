@@ -1,4 +1,5 @@
 import sys
+import tty, termios
 
 
 class MiniMachineVM:
@@ -60,7 +61,7 @@ class MiniMachineVM:
                 return f"{op}{imstr} {op_val(op1, imm1)}, {op_val(op2, imm2)}, {dest}"
         elif opclass == 0b10:
             # IO
-            io_ops = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "JRE", "HCF"]
+            io_ops = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "RFT", "HCF"]
             op = io_ops[subtype] if subtype < len(io_ops) else "???"
             if op == "MOV":
                 return f"{op}{imstr} {op_val(op1, imm1)}, {reg_name(dest & 0x7)}"
@@ -77,8 +78,8 @@ class MiniMachineVM:
                 return f"{op}{imstr} {op_val(op1, imm1)}, {fmt_str}"
             elif op == "CALL":
                 return f"{op}{imstr} {op_val(op1, imm1)}"
-            elif op == "JRE":
-                return f"{op}"
+            elif op == "RFT":
+                return f"{op}{imstr} {op_val(op1, imm1)}"
             elif op == "HCF":
                 return f"{op}"
             else:
@@ -211,11 +212,45 @@ class MiniMachineVM:
                 self.stack.append((self.reg[self.PC]) % 256)
                 self.set_reg(self.PC, addr)
                 return
-            elif subtype == 0b110:  # JRE
-                offset = self.reg[0]
-                if offset >= 0x80:
-                    offset = offset - 0x100  # signed
-                self.set_reg(self.PC, (self.reg[self.PC] + offset) % 256)
+            elif subtype == 0b110:  # RFT
+                fmt = op2 & 0x3
+                input_val = None
+                try:
+                    fd = sys.stdin.fileno()
+                    old_settings = termios.tcgetattr(fd)
+                    try:
+                        tty.setraw(fd)
+                        user_input = sys.stdin.read(1)
+                    finally:
+                        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                except EOFError:
+                    user_input = ""
+                if fmt == 0:  # UTF-8
+                    if user_input:
+                        input_val = ord(user_input[0]) & 0xFF
+                    else:
+                        input_val = 0xFF
+                elif fmt == 1:  # Decimal
+                    if user_input.isdigit() and 0 <= int(user_input) <= 9:
+                        input_val = int(user_input)
+                    else:
+                        input_val = 0xFF
+                elif fmt == 2:  # Alphabetic
+                    if user_input and user_input[0].isalpha():
+                        ch = user_input[0].upper()
+                        idx = ord(ch) - ord("A")
+                        if 0 <= idx <= 25:
+                            input_val = idx
+                        else:
+                            input_val = 0xFF
+                    else:
+                        input_val = 0xFF
+                elif fmt == 3:  # Hexadecimal
+                    if user_input and len(user_input) == 1 and user_input[0].upper() in "0123456789ABCDEF":
+                        input_val = int(user_input[0], 16)
+                    else:
+                        input_val = 0xFF
+                self.set_reg(dest & 0x7, input_val)
                 return
             elif subtype == 0b111:  # HCF
                 self.halted = True

@@ -286,7 +286,7 @@ export default class MiniMachineVM {
       }
     } else if (opclass === 0b10) {
       // IO
-      const ioOps = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "JRE", "HCF"];
+      const ioOps = ["MOV", "SWAP", "PUSH", "POP", "WRT", "CALL", "RFT", "HCF"];
       const op = ioOps[subtype] || "???";
       if (op === "MOV") {
         return `${op} ${opVal(op1, imm1)}, ${regName(dest)}`;
@@ -342,7 +342,14 @@ export default class MiniMachineVM {
           .padStart(2, "0")} ${modeComment}`;
       } else if (op === "CALL") {
         return `${op} ${opVal(op1, imm1)}`;
-      } else if (op === "JRE" || op === "HCF") {
+      } else if (op === "RFT") {
+        if (imm1) {
+          return `${op} ${opVal(op1, imm1)}, ${opVal(op2, imm2)}, ${regName(
+            dest
+          )}`;
+        }
+        return `${op} ${regName(op1)}, ${regName(op2)}, ${regName(dest)}`;
+      } else if (op === "HCF") {
         return `${op}`;
       } else {
         return `${op} ???`;
