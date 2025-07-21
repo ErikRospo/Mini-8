@@ -316,7 +316,7 @@ export default class MiniMachineVM {
 
           this.setReg(dest & 0x7, this.rft(fmt));
 
-          return;
+          break;
         }
         case 7: {
           this.halted = true;
