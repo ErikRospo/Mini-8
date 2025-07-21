@@ -42,20 +42,47 @@ export const REGISTERS = {
 };
 
 export function parseValue(val, constants) {
-  val = val.trim();
+  try {
+    val = val.trim();
+  } catch (err) {
+    if (typeof val === "number")
+      return { value: val & 0xff, isRegister: false };
+    throw new Error("Error parsing value: " + val);
+  }
   if (val in constants) {
     const c = constants[val];
-    if (isRegister(c)) return REGISTERS[c];
-    return c & 0xff;
+    if (
+      typeof c === "object" &&
+      c !== null &&
+      "value" in c &&
+      "isRegister" in c
+    ) {
+      return c;
+    }
+    if (isRegister(c)) return { value: REGISTERS[c], isRegister: true };
+    return { value: c & 0xff, isRegister: false };
   }
-  if (/^['"](.{1})['"]$/.test(val)) return val.charCodeAt(1) & 0xff;
-  if (val.startsWith("0x")) return parseInt(val.replace("0x", ""), 16) & 0xff;
-  if (val.startsWith("0b")) return parseInt(val.replace("0b", ""), 2) & 0xff;
-  if (/^\d+$/.test(val)) return parseInt(val, 10) & 0xff;
+  if (/^['"](.{1})['"]$/.test(val))
+    return { value: val.charCodeAt(1) & 0xff, isRegister: false };
+  if (val.startsWith("0x"))
+    return {
+      value: parseInt(val.replace("0x", ""), 16) & 0xff,
+      isRegister: false,
+    };
+  if (val.startsWith("0b"))
+    return {
+      value: parseInt(val.replace("0b", ""), 2) & 0xff,
+      isRegister: false,
+    };
+  if (/^\d+$/.test(val))
+    return { value: parseInt(val, 10) & 0xff, isRegister: false };
   throw new Error("Unknown value: " + val);
 }
 
 export function isRegister(val) {
+  if (typeof val === "object" && val !== null && "isRegister" in val) {
+    return val.isRegister;
+  }
   if (/^R[0-7]$/.test(val)) {
     throw new Error(
       `Register names must be lowercase (use "r${val[1]}" instead of "${val}")`
@@ -66,14 +93,25 @@ export function isRegister(val) {
 
 export function encodeOpcode(mnemonic, op1, op2) {
   let [cls, subtype] = OPCODES[mnemonic];
+  // Use metadata if available
   let imm1 = op1 && !isRegister(op1) ? 1 : 0;
   let imm2 = op2 && !isRegister(op2) ? 1 : 0;
+  if (typeof op1 === "object" && op1 !== null && "isRegister" in op1) {
+    imm1 = !op1.isRegister ? 1 : 0;
+  }
+  if (typeof op2 === "object" && op2 !== null && "isRegister" in op2) {
+    imm2 = !op2.isRegister ? 1 : 0;
+  }
   return (imm1 << 6) | (imm2 << 5) | (OPCLASS[cls] << 3) | subtype;
 }
 
 export function encodeOperand(val, constants) {
   if (!val) return 0;
-  return isRegister(val) ? REGISTERS[val] : parseValue(val, constants);
+  if (typeof val === "object" && val !== null && "value" in val) {
+    return val.value;
+  }
+  if (isRegister(val)) return REGISTERS[val];
+  return parseValue(val, constants).value;
 }
 
 export function handleShorthand(op, args) {
@@ -82,8 +120,8 @@ export function handleShorthand(op, args) {
   else if (op === "HCF") args = ["0", "0", "0"];
   else if (op === "WRT" && args.length === 1) args.push("0", "0");
   else if (op === "WRT" && args.length === 2) args.push("0");
-  else if (op === "RFT" && args.length === 1) args= ["0", "0", args[0]];
-  else if (op === "RFT" && args.length === 2) args= ["0", args[0], args[1]];
+  else if (op === "RFT" && args.length === 1) args = ["0", "0", args[0]];
+  else if (op === "RFT" && args.length === 2) args = ["0", args[0], args[1]];
   else if (op === "PUSH" && args.length === 1) args.push("0", "0");
   else if (op === "POP" && args.length === 1) args = ["0", "0", args[0]];
   else if (op === "JMP" && args.length === 1) args = ["0", "0", args[0]];
@@ -114,9 +152,10 @@ export function assembleFromLines(lines) {
       const [_, name, body] = defineMatch;
       try {
         if (body && isRegister(body.trim())) {
-          constants[name] = body.trim();
+          constants[name] = { value: body.trim(), isRegister: true };
         } else {
-          constants[name] = parseValue(body, constants);
+          const parsed = parseValue(body, constants);
+          constants[name] = parsed;
         }
       } catch (err) {
         throw new Error(
@@ -158,16 +197,17 @@ export function assembleFromLines(lines) {
       if (mnemonic === "LABEL") {
         const label = tokens[1].replace(/:$/, "");
         labels[label] = pc;
-        constants[label] = pc;
+        constants[label] = { value: pc, isRegister: false };
         continue;
       }
 
       let args = handleShorthand(mnemonic, tokens.slice(1));
       for (let i = 0; i < 3; i++) {
-        if (args[i] in labels) args[i] = labels[args[i]].toString();
+        if (args[i] in labels)
+          args[i] = { value: labels[args[i]], isRegister: false };
         else if (args[i]?.startsWith("$")) {
           unresolved.push([output.length, i, args[i].slice(1)]);
-          args[i] = "0";
+          args[i] = { value: 0, isRegister: false };
         }
         if (args[i] in constants) {
           args[i] = constants[args[i]];
