@@ -1,0 +1,229 @@
+define EMPTY 0x00
+define X 0x01
+define O 0x02
+label $main
+
+label $p1turn
+    MOV X, r0
+    WRT "P", 0b00
+    WRT "1", 0b00
+    WRT ":", 0b00
+    WRT 32, 0b00 ; space
+    JMP $get_input
+
+label $p2turn
+    MOV O, r0
+    WRT "P", 0b00
+    WRT "2", 0b00
+    WRT ":", 0b00
+    WRT 32, 0b00 ; space
+    JMP $get_input
+
+label $get_input
+    RFT 0b01, RAMADDR ; Read input into RAMADDR as decimal format
+    ; RAMADDR should be a number between 0 and 8, inclusive
+    JGT RAMADDR, 8, $get_input ; If RAMADDR is greater than 8, read again
+    WRT RAMADDR, 0b01
+    WRT 10 ; newline
+    ; This also handles the case where there's no input, as it'll be 0xFE
+    ; And if it's invalid, 0xFF. Both are greater than 8, so it's just handled inherently
+
+    ;Check if the position is already taken
+    JEQ RAMDATA, X, $nonempty ; If RAMDATA is not EMPTY, position is taken
+    JEQ RAMDATA, O, $nonempty ; If RAMDATA is not EMPTY, position is taken
+
+    MOV r0, RAMDATA ; Store the player's mark in the position
+    
+
+    JMP $check_winner ; Check if the player has won
+
+label $nonempty
+    WRT "T"
+    WRT "A"
+    WRT "K"
+    WRT "E"
+    WRT "N"
+    WRT 32, 0b00 ; space
+    WRT 10 ; newline
+    JEQ r0, X, $p1turn ; preserve turns
+    JEQ r0, O, $p2turn
+    JMP $get_input ; r0 should always be either X or O, but if it's not, we just read again.
+
+; 0 1 2
+; 3 4 5
+; 6 7 8
+; If 0 AND 1 AND 2 == X, then X wins. If O, then O wins.
+; Add 3 to each index to check the next row, then again.
+label $check_winner
+    PUSH r0 ; Save the current player mark
+    ; Check rows 
+    MOV 0, r0 ; r0 will hold the current ROW index
+
+    MOV 0xFF, r1 ; r1 will hold the current accumulator for the row
+
+label $row_init
+    MOV r0, RAMADDR 
+    MOV 0xFF, r1
+    MOV 0, r2 ; r2 will be the column counter
+
+label $check_row
+    ADD r0, r2, RAMADDR ; RAMADDR = row start + column offset
+    AND r1, RAMDATA, r1
+    ADD r2, 1, r2 ; increment column counter
+    JLT r2, 3, $check_row ; If r2 < 3, continue checking the row
+    ; Now r1 holds the accumulated value for the row
+    JNE r1, EMPTY, $winner ; If r1 is not EMPTY, it should be a win.
+
+    ADD r0, 3, r0
+    JLT r0, 9, $row_init ; If r0 is less than 9, continue to the next row
+    ; If we reach here, no rows have won
+
+
+; Check columns
+MOV 0, r0 ; r0 will hold the current COLUMN index
+
+label $col_init
+    MOV r0, RAMADDR
+    MOV 0xFF, r1 ; accumulator for the column
+    MOV 0, r2 ; r2 will be the row counter
+
+label $check_col
+    ; r3 = r2 * 3 (simulate multiplication by repeated addition)
+    MOV r2, r3
+    ADD r3, r2, r3 
+    ADD r3, r2, r3 
+    ; Not the cleanest, but it's smaller than a loop for just multiplying by 3.
+    ADD r3, r0, RAMADDR ; RAMADDR = row offset + column index
+    AND r1, RAMDATA, r1
+    ADD r2, 1, r2 ; increment row counter
+    JLT r2, 3, $check_col ; If r2 < 3, continue checking the column
+    ; Now r1 holds the accumulated value for the column
+    JNE r1, EMPTY, $winner ; If r1 is not EMPTY, it should be a win.
+
+    ADD r0, 1, r0
+    JLT r0, 3, $col_init ; If r0 < 3, continue to the next column
+    ; If we reach here, no columns have won
+
+MOV 0xFF, r1
+MOV 0, RAMADDR ; Reset RAMADDR to 0
+AND r1, RAMDATA, r1
+MOV 4, RAMADDR ; Set RAMADDR to 4 for middle check
+AND r1, RAMDATA, r1 ; Check the middle cell
+MOV 8, RAMADDR ; Set RAMADDR to 8 for last check
+AND r1, RAMDATA, r1 ; Check the last cell
+JNE r1, EMPTY, $winner ; If r1 is not EMPTY, it should be a win.
+
+MOV 0xFF, r1
+MOV 6, RAMADDR ; Reset RAMADDR to 6
+AND r1, RAMDATA, r1
+MOV 4, RAMADDR ; Set RAMADDR to 4 for middle check
+AND r1, RAMDATA, r1 ; Check the middle cell
+MOV 2, RAMADDR ; Set RAMADDR to 2 for last check
+AND r1, RAMDATA, r1 ; Check the last cell
+JNE r1, EMPTY, $winner ; If r1 is not EMPTY, it should be a win.
+
+; If we reach here, no one has won yet, so check for a draw
+MOV 0, RAMADDR ; Reset RAMADDR to 0 
+label $check_draw
+    JEQ RAMDATA, EMPTY, $draw_empty ; If RAMDATA is EMPTY, it's an empty cell
+    ADD RAMADDR, 1, RAMADDR ; Increment RAMADDR to point to the next cell
+    JLT RAMADDR, 9, $check_draw ; If RAMADDR < 9, continue checking
+; If we reach here, all cells are filled, so it's a draw
+JMP $draw
+
+label $draw_empty
+; If we've exited, that means that there's an empty square, so it's not yet a draw.
+
+; No one has won yet, so print the board
+WRT "B"
+WRT "O"
+WRT "A"
+WRT "R"
+WRT "D"
+WRT ":"
+WRT 10 ; newline
+MOV 255, RAMADDR ; (255 + 1 = 0, rest of code is cleaner)
+MOV 0, r1
+
+label $board_loop
+
+    ADD RAMADDR, 1, RAMADDR ; Increment RAMADDR to point to the next cell
+
+    JEQ RAMDATA, EMPTY, $empty_cell
+    JEQ RAMDATA, X, $x_cell
+    JEQ RAMDATA, O, $o_cell
+label $board_loop_check
+    JEQ RAMADDR, 2, $newline
+    JEQ RAMADDR, 5, $newline
+    JEQ RAMADDR, 8, $end_board
+
+    JMP $board_loop
+
+label $newline
+    WRT 10 ; newline
+    JMP $board_loop
+
+label $empty_cell
+    WRT "."
+    JMP $board_loop_check
+
+label $x_cell
+    WRT "X"
+    JMP $board_loop_check
+
+label $o_cell
+    WRT "O"
+    JMP $board_loop_check
+
+
+label $end_board
+    WRT 10 ; newline
+    JEQ r1, 1, $gg
+
+
+POP r0
+JEQ r0, X, $p2turn ; If r0 is X (player 1), switch to player 2
+JEQ r0, O, $p1turn ; If r0 is O (player 2), switch to player 1
+HCF ; If r0 is neither, halt the program (this should never happen)
+
+label $winner
+    POP r0 ; Restore the current player mark
+    JEQ r1, X, $p1win ; If r1 is equal to X, player 1 wins
+    JEQ r1, O, $p2win ; If r1 is equal to O, player 2 wins
+    JMP $main ; If no one has won, go back to the main loop
+
+label $p1win
+    WRT "P"
+    WRT "1"
+    JMP $win
+
+label $p2win
+    WRT "P"
+    WRT "2"
+
+label $win
+    WRT 32 ; space
+    WRT "W"
+    WRT "I"
+    WRT "N"
+    WRT 10 ; newline
+    MOV 1, r1
+    MOV 255, RAMADDR
+    JMP $board_loop
+
+label $draw
+    WRT "D"
+    WRT "R"
+    WRT "A"
+    WRT "W"
+    WRT 10 ; newline
+    MOV 1, r1
+    MOV 255, RAMADDR
+    JMP $board_loop
+    
+label $gg
+    WRT 10
+    WRT "G"
+    WRT "G"
+
+    HCF
